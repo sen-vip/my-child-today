@@ -30,7 +30,8 @@ app.get("/api/schools", async (req, res) => {
       officeCode: row.ATPT_OFCDC_SC_CODE,
       schoolCode: row.SD_SCHUL_CODE,
       schoolType: row.SCHUL_KND_SC_NM,
-      address: row.ORG_RDNMA || row.ORG_RDNDA || ""
+      address: row.ORG_RDNMA || row.ORG_RDNDA || "",
+      homepageUrl: row.HMPG_ADRES || ""
     }));
 
     res.json({ schools });

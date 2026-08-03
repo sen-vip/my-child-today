@@ -2193,3 +2193,224 @@ body[data-active-view="timetable"] .detail-grid {
     grid-column: auto;
   }
 }
+
+/* ============================================================
+   v0.3 학교 홈페이지·공지사항 바로가기
+   ============================================================ */
+.school-links-card {
+  padding: 20px 22px;
+}
+
+.school-links-heading,
+.link-editor-heading,
+.link-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.school-links-heading h2 {
+  margin: 3px 0 0;
+  color: var(--ink-strong);
+  font-size: 20px;
+  line-height: 1.3;
+  letter-spacing: -0.035em;
+}
+
+.link-settings-button {
+  flex: 0 0 auto;
+}
+
+.school-link-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.school-link-button {
+  min-width: 0;
+  min-height: 78px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-subtle);
+  color: var(--ink);
+  text-align: left;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.school-link-button:hover:not(:disabled) {
+  border-color: #cfd3ff;
+  background: var(--primary-soft);
+  transform: translateY(-1px);
+}
+
+.school-link-button:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.school-link-button.notice-needs-setup {
+  border-style: dashed;
+  background: #fbfbff;
+  opacity: 1;
+}
+
+.school-link-button.notice-needs-setup:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.school-link-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 21px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.school-link-button strong,
+.school-link-button small {
+  display: block;
+  min-width: 0;
+}
+
+.school-link-button strong {
+  color: var(--ink-strong);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.school-link-button small {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.external-link-mark {
+  color: var(--muted-light);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.school-links-hint,
+.link-editor-help {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.link-editor {
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid #d9dcff;
+  border-radius: 14px;
+  background: #fbfbff;
+}
+
+.link-editor-heading {
+  align-items: flex-start;
+}
+
+.link-editor-heading strong {
+  color: var(--ink-strong);
+  font-size: 15px;
+}
+
+.link-editor-heading p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.link-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.link-editor-grid label {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.link-editor-grid label > span {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.link-editor-grid input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.link-editor-grid input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(86, 97, 215, 0.11);
+  outline: none;
+}
+
+.link-editor-actions {
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .school-links-card {
+    padding: 16px;
+  }
+
+  .school-links-heading {
+    align-items: flex-start;
+  }
+
+  .school-links-heading h2 {
+    font-size: 18px;
+  }
+
+  .link-settings-button {
+    min-height: 34px;
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+
+  .school-link-actions,
+  .link-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .school-link-button {
+    min-height: 70px;
+  }
+
+  .link-editor-heading,
+  .link-editor-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .link-editor-actions button {
+    width: 100%;
+  }
+}

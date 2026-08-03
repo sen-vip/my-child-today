@@ -1,5 +1,5 @@
 // ============================================================
-// 우리아이 오늘 v0.2 - 자녀 프로필 로컬 저장 모듈
+// 우리아이 오늘 v0.3 - 자녀 프로필·학교 바로가기 로컬 저장 모듈
 // 오늘학교의 localStorage 키와 완전히 분리되어 동작합니다.
 // ============================================================
 
@@ -33,6 +33,37 @@
     return String(number);
   }
 
+  function normalizeExternalUrl(value, options = {}) {
+    const { allowEmpty = true, throwOnInvalid = true } = options;
+    let text = safeString(value);
+    if (!text) {
+      if (allowEmpty) return "";
+      if (throwOnInvalid) throw new Error("웹사이트 주소를 입력해 주세요.");
+      return "";
+    }
+
+    if (!/^[a-z][a-z\d+.-]*:\/\//i.test(text)) {
+      text = `https://${text}`;
+    }
+
+    try {
+      const url = new URL(text);
+      if (!["http:", "https:"].includes(url.protocol)) {
+        throw new Error("웹사이트 주소만 등록할 수 있어요.");
+      }
+      return url.href;
+    } catch (error) {
+      if (throwOnInvalid) {
+        throw new Error("올바른 웹사이트 주소를 입력해 주세요.");
+      }
+      return "";
+    }
+  }
+
+  function normalizeStoredUrl(value) {
+    return normalizeExternalUrl(value, { allowEmpty: true, throwOnInvalid: false });
+  }
+
   function normalizeSchool(school = {}) {
     return {
       schoolName: safeString(school.schoolName || school.SCHUL_NM),
@@ -40,7 +71,8 @@
       officeCode: safeString(school.officeCode || school.ATPT_OFCDC_SC_CODE),
       schoolCode: safeString(school.schoolCode || school.SD_SCHUL_CODE),
       schoolType: safeString(school.schoolType || school.SCHUL_KND_SC_NM, "학교"),
-      address: safeString(school.address || school.ORG_RDNMA || school.ORG_RDNDA)
+      address: safeString(school.address || school.ORG_RDNMA || school.ORG_RDNDA),
+      homepageUrl: normalizeStoredUrl(school.homepageUrl || school.HMPG_ADRES)
     };
   }
 
@@ -56,13 +88,20 @@
     return {
       id: safeString(profile.id),
       nickname: safeString(profile.nickname, defaultNickname(index)),
-      school,
+      school: {
+        schoolName: school.schoolName,
+        region: school.region,
+        officeCode: school.officeCode,
+        schoolCode: school.schoolCode,
+        schoolType: school.schoolType,
+        address: school.address
+      },
       grade: normalizeNumber(profile.grade, 1, 6),
       className: normalizeNumber(profile.className, 1, 30),
       semester: ["1", "2"].includes(String(profile.semester)) ? String(profile.semester) : "1",
       links: {
-        homepageUrl: safeString(profile.links?.homepageUrl),
-        noticeUrl: safeString(profile.links?.noticeUrl)
+        homepageUrl: normalizeStoredUrl(profile.links?.homepageUrl || school.homepageUrl),
+        noticeUrl: normalizeStoredUrl(profile.links?.noticeUrl)
       },
       createdAt: safeString(profile.createdAt, now),
       updatedAt: safeString(profile.updatedAt, now)
@@ -114,16 +153,31 @@
     const school = normalizeSchool(input.school || existingProfile?.school || {});
     if (!isValidSchool(school)) throw new Error("학교를 선택해 주세요.");
 
+    const inputLinks = input.links || {};
+    const homepageSource = Object.prototype.hasOwnProperty.call(inputLinks, "homepageUrl")
+      ? inputLinks.homepageUrl
+      : school.homepageUrl || existingProfile?.links?.homepageUrl;
+    const noticeSource = Object.prototype.hasOwnProperty.call(inputLinks, "noticeUrl")
+      ? inputLinks.noticeUrl
+      : existingProfile?.links?.noticeUrl;
+
     return {
       id: existingProfile?.id || createId(),
       nickname: safeString(input.nickname, existingProfile?.nickname || defaultNickname(index)),
-      school,
+      school: {
+        schoolName: school.schoolName,
+        region: school.region,
+        officeCode: school.officeCode,
+        schoolCode: school.schoolCode,
+        schoolType: school.schoolType,
+        address: school.address
+      },
       grade: normalizeNumber(input.grade, 1, 6),
       className: normalizeNumber(input.className, 1, 30),
       semester: ["1", "2"].includes(String(input.semester)) ? String(input.semester) : "1",
       links: {
-        homepageUrl: safeString(input.links?.homepageUrl || existingProfile?.links?.homepageUrl),
-        noticeUrl: safeString(input.links?.noticeUrl || existingProfile?.links?.noticeUrl)
+        homepageUrl: normalizeStoredUrl(homepageSource),
+        noticeUrl: normalizeStoredUrl(noticeSource)
       },
       createdAt: existingProfile?.createdAt || now,
       updatedAt: now
@@ -149,6 +203,29 @@
 
     state.profiles[index] = buildProfile(input, state.profiles[index], index);
     state.activeProfileId = state.profiles[index].id;
+    return saveState(state);
+  }
+
+  function updateProfileLinks(profileId, links = {}) {
+    const state = loadState();
+    const index = state.profiles.findIndex((profile) => profile.id === profileId);
+    if (index < 0) throw new Error("수정할 자녀 정보를 찾지 못했어요.");
+
+    const profile = state.profiles[index];
+    const nextLinks = { ...profile.links };
+
+    if (Object.prototype.hasOwnProperty.call(links, "homepageUrl")) {
+      nextLinks.homepageUrl = normalizeExternalUrl(links.homepageUrl, { allowEmpty: true });
+    }
+    if (Object.prototype.hasOwnProperty.call(links, "noticeUrl")) {
+      nextLinks.noticeUrl = normalizeExternalUrl(links.noticeUrl, { allowEmpty: true });
+    }
+
+    state.profiles[index] = {
+      ...profile,
+      links: nextLinks,
+      updatedAt: new Date().toISOString()
+    };
     return saveState(state);
   }
 
@@ -188,12 +265,14 @@
     saveState,
     addProfile,
     updateProfile,
+    updateProfileLinks,
     deleteProfile,
     setActiveProfile,
     getActiveProfile,
     suggestNickname,
     clearAll,
     normalizeSchool,
+    normalizeExternalUrl,
     isValidSchool
   });
 })(window);
