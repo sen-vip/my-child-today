@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>우리아이 오늘</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏫%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <a class="brand-home" href="#home" aria-label="처음으로">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="img" focusable="false">
+            <path d="M4 20V8.5L12 4l8 4.5V20" />
+            <path d="M8 20v-5h8v5M8 10h.01M12 10h.01M16 10h.01" />
+          </svg>
+        </span>
+        <span id="topSchoolName">우리아이 오늘</span>
+      </a>
+      <nav class="top-actions" aria-label="상단 메뉴">
+        <a class="outline-link" href="#profiles">자녀관리</a>
+        <a class="help-link" href="https://github.com/sen-vip/my-child-today#readme" target="_blank" rel="noopener noreferrer">도움말</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <header class="hero" id="home">
+      <span class="hero-eyebrow">여러 자녀의 학교생활</span>
+      <h1>우리 아이의 오늘을 한눈에</h1>
+      <p>자녀별 급식, 시간표와 학교일정을 빠르게 확인하세요.</p>
+    </header>
+
+    <main>
+      <section class="card child-switcher-card" id="profiles" aria-labelledby="profileListTitle">
+        <div class="child-switcher-heading">
+          <div>
+            <span class="kicker">자녀 선택</span>
+            <h2 id="profileListTitle">우리 아이</h2>
+          </div>
+          <button type="button" class="profile-add-button" id="addProfileBtn">＋ 자녀 추가</button>
+        </div>
+        <div id="childProfileList" class="child-profile-list" aria-live="polite"></div>
+        <p id="profileLimitHint" class="profile-limit-hint">자녀는 최대 5명까지 이 기기에만 저장할 수 있어요.</p>
+      </section>
+
+      <section class="shared-view-banner" id="sharedViewBanner" hidden>
+        <div>
+          <strong>공유받은 학교를 임시로 보고 있어요.</strong>
+          <p>등록된 자녀 정보는 변경되지 않습니다.</p>
+        </div>
+        <button type="button" id="exitSharedViewBtn">내 자녀로 돌아가기</button>
+      </section>
+
+      <section class="card search-card profile-editor-card" id="search" hidden>
+        <div class="card-heading">
+          <div>
+            <span class="kicker">자녀 설정</span>
+            <h2 id="searchTitle">첫 자녀 등록</h2>
+          </div>
+          <div class="profile-editor-top-actions">
+            <button type="button" class="ghost-button danger-text" id="resetBtn">모든 자녀 삭제</button>
+            <button type="button" class="ghost-button" id="cancelProfileEditBtn">취소</button>
+          </div>
+        </div>
+
+        <label class="nickname-field">
+          <span class="setting-label">자녀 별칭</span>
+          <input id="nicknameInput" type="text" maxlength="20" placeholder="예: 첫째, 민준, 중학생" autocomplete="off" />
+          <small>실명 대신 아이를 구분할 별칭만 입력해도 돼요.</small>
+        </label>
+
+        <div class="top-setting-grid">
+          <div class="setting-panel school-setting-panel">
+            <span class="setting-label">학교명 검색</span>
+            <form class="search-form" id="schoolSearchForm">
+              <label class="search-field">
+                <span>지역</span>
+                <select id="officeCode" aria-label="시도교육청 선택"></select>
+              </label>
+              <label class="search-field">
+                <span>학교명</span>
+                <input id="schoolKeyword" type="search" placeholder="예: 대청중, 서울학돌초" autocomplete="off" />
+              </label>
+              <div class="search-field search-submit-field">
+                <span aria-hidden="true">검색</span>
+                <button type="submit">검색</button>
+              </div>
+            </form>
+            <div class="quick-row">
+              <button type="button" data-office="B10" data-keyword="">서울</button>
+              <button type="button" data-keyword="초등학교">초등학교</button>
+              <button type="button" data-keyword="중학교">중학교</button>
+              <button type="button" data-keyword="고등학교">고등학교</button>
+            </div>
+          </div>
+
+          <div class="setting-panel class-setting-panel">
+            <span class="setting-label">학년·반 설정</span>
+            <div class="timetable-controls top-timetable-controls">
+              <label>학년 <input id="gradeInput" type="number" min="1" max="6" value="1" /></label>
+              <label>반 <input id="classInput" type="number" min="1" max="30" value="1" /></label>
+              <label>학기
+                <select id="semesterInput">
+                  <option value="1">1학기</option>
+                  <option value="2">2학기</option>
+                </select>
+              </label>
+            </div>
+            <p class="save-helper timetable-save-helper">등록 완료 후 이 자녀의 급식·시간표·학사일정에 적용돼요.</p>
+          </div>
+        </div>
+
+        <div id="draftSchoolPreview" class="draft-school-preview" hidden></div>
+        <div id="schoolResults" class="school-results" aria-live="polite"></div>
+
+        <div class="profile-editor-actions">
+          <button type="button" class="profile-delete-button" id="deleteProfileBtn" hidden>이 자녀 삭제</button>
+          <div class="profile-editor-primary-actions">
+            <button type="button" class="ghost-button" id="cancelProfileEditBtnBottom">취소</button>
+            <button type="button" class="profile-save-button" id="saveProfileBtn">등록 완료</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="selected-card" id="selectedCard">
+        <div class="selected-icon" aria-hidden="true"></div>
+        <div class="selected-content">
+          <span class="kicker" id="selectedKicker">현재 선택한 자녀</span>
+          <h2 id="selectedSchoolName">첫 자녀를 등록하면 생활 달력이 열려요.</h2>
+          <p id="selectedSchoolMeta">학교와 학년·반을 등록해 주세요.</p>
+          <div class="selected-action-row">
+            <button type="button" class="edit-profile-btn" id="editProfileBtn">자녀 정보 수정</button>
+            <button type="button" class="reload-timetable-btn" id="reloadTimetableBtn">시간표 새로고침</button>
+            <button type="button" class="share-button" id="shareSchoolBtn">공유하기</button>
+          </div>
+        </div>
+      </section>
+
+      <nav class="main-view-tabs" role="tablist" aria-label="우리아이 오늘 보기 전환">
+        <button type="button" class="active" data-view="all" role="tab" aria-selected="true">오늘</button>
+        <button type="button" data-view="schedule" role="tab" aria-selected="false">일정</button>
+        <button type="button" data-view="meal" role="tab" aria-selected="false">급식</button>
+        <button type="button" data-view="timetable" role="tab" aria-selected="false">시간표</button>
+      </nav>
+
+      <section class="card today-summary-card" id="todaySummaryCard" data-view-section="summary" aria-live="polite">
+        <div class="today-summary-head">
+          <div>
+            <span class="kicker">오늘 한눈에 보기</span>
+            <h2 id="todaySummaryTitle">우리 아이 오늘</h2>
+          </div>
+          <div class="today-summary-actions">
+            <span class="today-summary-date" id="todaySummaryDate">오늘 날짜</span>
+            <button type="button" class="copy-button" id="copyTodayBtn">오늘 내용 복사</button>
+          </div>
+        </div>
+        <div class="today-summary-grid">
+          <article class="today-summary-item">
+            <strong class="summary-title summary-title-schedule"><span class="title-emoji" aria-hidden="true">📅</span><span>학사일정</span></strong>
+            <div id="todayScheduleSummary" class="today-summary-body">자녀를 등록해 주세요.</div>
+          </article>
+          <article class="today-summary-item">
+            <strong id="todayMealTitle" class="summary-title summary-title-meal"><span class="title-emoji" aria-hidden="true">🍱</span><span>급식</span></strong>
+            <div id="todayMealSummary" class="today-summary-body">자녀를 등록해 주세요.</div>
+          </article>
+          <article class="today-summary-item">
+            <strong id="todayTimetableTitle" class="summary-title summary-title-timetable"><span class="title-emoji" aria-hidden="true">🕘</span><span>시간표</span></strong>
+            <div id="todayTimetableSummary" class="today-summary-body">학년·반·학기를 입력하고 시간표를 불러오면 표시됩니다.</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="card tools-card" id="calendarArea" data-view-section="calendar">
+        <div class="toolbar">
+          <button type="button" id="prevMonth" aria-label="이전 달">‹</button>
+          <div>
+            <span class="kicker">월별 달력</span>
+            <h2 id="monthTitle">2026년 6월</h2>
+          </div>
+          <button type="button" id="nextMonth" aria-label="다음 달">›</button>
+          <button type="button" id="todayBtn">오늘</button>
+        </div>
+
+
+        <div class="calendar" id="calendar" aria-label="월별 학교 생활 달력"></div>
+      </section>
+
+      <section class="card selected-detail-card" id="detailArea" data-view-section="detail">
+        <div class="selected-detail-head" id="selectedCopyStrip">
+          <div>
+            <span class="kicker">선택 날짜 참고</span>
+            <strong id="selectedCopyDate">날짜를 선택해 주세요.</strong>
+            <p>달력에서 날짜를 누르면 해당 날짜의 학사일정, 급식, 시간표를 확인할 수 있어요.</p>
+          </div>
+          <div class="selected-copy-actions">
+            <button type="button" class="copy-button ghost-copy" id="copySelectedBtn">선택 날짜 복사</button>
+            <button type="button" class="copy-button ghost-copy share-selected-button" id="shareSelectedBtn">이 날짜 공유</button>
+          </div>
+        </div>
+
+        <div class="detail-section-label" aria-hidden="true">
+          <span>이 날짜의 학사일정 · 급식 · 시간표</span>
+        </div>
+
+        <div class="detail-grid">
+          <article class="detail-card schedule-detail" data-panel="schedule">
+            <div class="detail-title schedule-title">
+              <h2><span class="title-emoji" aria-hidden="true">📅</span><span>학사일정</span></h2>
+            </div>
+            <div id="scheduleDetail" class="detail-body">학교와 날짜를 선택해 주세요.</div>
+          </article>
+
+          <article class="detail-card meal-detail" data-panel="meal">
+            <div class="detail-title meal-title">
+              <h2><span class="title-emoji" aria-hidden="true">🍱</span><span>급식</span></h2>
+            </div>
+            <div id="mealDetail" class="detail-body">학교와 날짜를 선택해 주세요.</div>
+          </article>
+
+          <article class="detail-card timetable-detail" data-panel="timetable">
+            <div class="detail-title timetable-title">
+              <h2><span class="title-emoji" aria-hidden="true">🕘</span><span>시간표</span></h2>
+            </div>
+            <div id="timetableDetail" class="detail-body">자녀를 등록하면 학년·반 기준으로 시간표가 자동 적용돼요.</div>
+          </article>
+        </div>
+      </section>
+
+
+      <footer class="app-footer">
+        <span>제작</span>
+        <strong>sen-vip</strong>
+      </footer>
+    </main>
+  </div>
+
+  <div class="copy-toast" id="copyToast" role="status" aria-live="polite"></div>
+  <script src="profile-store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
