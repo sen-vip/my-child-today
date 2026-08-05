@@ -1,6 +1,6 @@
 // ============================================================
-// 우리아이 오늘 v0.3 School Quick Links
-// 자녀 여러 명 등록·전환에 학교 홈페이지·공지사항 바로가기를 추가
+// 우리아이 오늘 v0.4.1 Readability & Accessibility
+// 부모형 가독성·접근성을 강화한 오늘·내일 홈과 자동 학교정보 카드
 // ============================================================
 
 const API_CONFIG = {
@@ -39,9 +39,9 @@ const OFFICE_OPTIONS = [
 ];
 
 const mockSchools = [
-  { schoolName: "서울학돌초등학교", region: "서울특별시교육청", officeCode: "B10", schoolCode: "7010000", schoolType: "초등학교", address: "서울특별시 중구 학돌로 10", homepageUrl: "https://example.com/seoul-elementary" },
-  { schoolName: "부산학돌중학교", region: "부산광역시교육청", officeCode: "C10", schoolCode: "7020000", schoolType: "중학교", address: "부산광역시 해운대구 학돌로 20", homepageUrl: "https://example.com/busan-middle" },
-  { schoolName: "경기학돌고등학교", region: "경기도교육청", officeCode: "J10", schoolCode: "7030000", schoolType: "고등학교", address: "경기도 수원시 학돌로 30", homepageUrl: "https://example.com/gyeonggi-high" }
+  { schoolName: "서울학돌초등학교", region: "서울특별시교육청", officeCode: "B10", schoolCode: "7010000", schoolType: "초등학교", address: "서울특별시 중구 학돌로 10", phoneNumber: "02-1234-5678", homepageUrl: "https://example.com/seoul-elementary" },
+  { schoolName: "부산학돌중학교", region: "부산광역시교육청", officeCode: "C10", schoolCode: "7020000", schoolType: "중학교", address: "부산광역시 해운대구 학돌로 20", phoneNumber: "051-123-4567", homepageUrl: "https://example.com/busan-middle" },
+  { schoolName: "경기학돌고등학교", region: "경기도교육청", officeCode: "J10", schoolCode: "7030000", schoolType: "고등학교", address: "경기도 수원시 학돌로 30", phoneNumber: "031-123-4567", homepageUrl: "https://example.com/gyeonggi-high" }
 ];
 
 const mockSchedules = [
@@ -87,6 +87,10 @@ const state = {
   meal: null,
   todaySchedules: [],
   todayMeal: null,
+  tomorrowSchedules: [],
+  tomorrowMeal: null,
+  tomorrowStatus: "idle",
+  tomorrowMessage: "",
   timetable: [],
   timetableStatus: "idle",
   timetableMessage: "",
@@ -94,9 +98,9 @@ const state = {
   schools: [],
   classSwitcherOpen: false,
   timetableAutoTimer: null,
-  linkEditorOpen: false,
   sharedHomepageUrl: "",
-  homepageLookupAttempts: new Set()
+  schoolInfoExpanded: localStorage.getItem("myChildToday.schoolInfoExpanded") === "true",
+  schoolInfoLookupAttempts: new Set()
 };
 
 const els = {
@@ -123,20 +127,27 @@ const els = {
   resetBtn: document.querySelector("#resetBtn"),
   selectedSchoolName: document.querySelector("#selectedSchoolName"),
   selectedSchoolMeta: document.querySelector("#selectedSchoolMeta"),
-  schoolLinksCard: document.querySelector("#schoolLinksCard"),
-  homepageBtn: document.querySelector("#homepageBtn"),
-  homepageButtonHint: document.querySelector("#homepageButtonHint"),
-  noticeBtn: document.querySelector("#noticeBtn"),
-  noticeButtonLabel: document.querySelector("#noticeButtonLabel"),
-  noticeButtonHint: document.querySelector("#noticeButtonHint"),
-  schoolLinksHint: document.querySelector("#schoolLinksHint"),
-  openLinkEditorBtn: document.querySelector("#openLinkEditorBtn"),
-  linkEditor: document.querySelector("#linkEditor"),
-  homepageUrlInput: document.querySelector("#homepageUrlInput"),
-  noticeUrlInput: document.querySelector("#noticeUrlInput"),
-  saveLinksBtn: document.querySelector("#saveLinksBtn"),
-  cancelLinksBtn: document.querySelector("#cancelLinksBtn"),
-  openHomepageFromEditorBtn: document.querySelector("#openHomepageFromEditorBtn"),
+  schoolInfoCard: document.querySelector("#schoolInfoCard"),
+  schoolInfoTitle: document.querySelector("#schoolInfoTitle"),
+  schoolInfoCompact: document.querySelector("#schoolInfoCompact"),
+  schoolInfoToggleBtn: document.querySelector("#schoolInfoToggleBtn"),
+  schoolInfoDetails: document.querySelector("#schoolInfoDetails"),
+  schoolPhoneRow: document.querySelector("#schoolPhoneRow"),
+  schoolPhoneText: document.querySelector("#schoolPhoneText"),
+  callSchoolBtn: document.querySelector("#callSchoolBtn"),
+  copyPhoneBtn: document.querySelector("#copyPhoneBtn"),
+  schoolAddressRow: document.querySelector("#schoolAddressRow"),
+  schoolAddressText: document.querySelector("#schoolAddressText"),
+  copyAddressBtn: document.querySelector("#copyAddressBtn"),
+  schoolHomepageBtn: document.querySelector("#schoolHomepageBtn"),
+  refreshSchoolInfoBtn: document.querySelector("#refreshSchoolInfoBtn"),
+  schoolInfoNote: document.querySelector("#schoolInfoNote"),
+  refreshSchoolInfoText: document.querySelector("#refreshSchoolInfoText"),
+  tomorrowPreviewCard: document.querySelector("#tomorrowPreviewCard"),
+  tomorrowPreviewTitle: document.querySelector("#tomorrowPreviewTitle"),
+  tomorrowMealSummary: document.querySelector("#tomorrowMealSummary"),
+  tomorrowScheduleSummary: document.querySelector("#tomorrowScheduleSummary"),
+  tomorrowDetailBtn: document.querySelector("#tomorrowDetailBtn"),
   todaySummaryCard: document.querySelector("#todaySummaryCard"),
   todaySummaryTitle: document.querySelector("#todaySummaryTitle"),
   todaySummaryDate: document.querySelector("#todaySummaryDate"),
@@ -175,7 +186,7 @@ function init() {
 
   if (sharedState.school) {
     activateSharedView(sharedState);
-    Promise.allSettled([loadMonthData(), enrichSharedHomepage()]).then(() => {
+    Promise.allSettled([loadMonthData(), enrichSharedSchoolInfo()]).then(() => {
       renderAll();
       requestAnimationFrame(() => {
         if (sharedState.date) {
@@ -191,7 +202,7 @@ function init() {
   const activeProfile = getActiveProfile();
   if (activeProfile) {
     applyProfileToRuntime(activeProfile);
-    Promise.allSettled([loadMonthData(), enrichProfileHomepage(activeProfile.id)]).then(() => {
+    Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(activeProfile.id)]).then(() => {
       renderAll();
       requestAnimationFrame(() => scrollToTodaySummary(false));
     });
@@ -262,33 +273,22 @@ function bindEvents() {
   els.cancelProfileEditBtnBottom?.addEventListener("click", closeProfileEditor);
   els.deleteProfileBtn?.addEventListener("click", deleteEditingProfile);
   els.exitSharedViewBtn?.addEventListener("click", exitSharedView);
-  els.openLinkEditorBtn?.addEventListener("click", openSchoolLinkEditor);
-  els.cancelLinksBtn?.addEventListener("click", closeSchoolLinkEditor);
-  els.saveLinksBtn?.addEventListener("click", saveSchoolLinks);
-  els.openHomepageFromEditorBtn?.addEventListener("click", () => {
-    const value = els.homepageUrlInput?.value || getCurrentSchoolLinks().homepageUrl;
-    openExternalUrl(value, "학교 홈페이지 주소를 먼저 등록해 주세요.");
+  els.schoolInfoToggleBtn?.addEventListener("click", toggleSchoolInfo);
+  els.schoolHomepageBtn?.addEventListener("click", () => {
+    openExternalUrl(getCurrentSchoolInfo().homepageUrl, "학교 홈페이지 주소를 찾지 못했어요.");
   });
-  els.homepageBtn?.addEventListener("click", () => {
-    const { homepageUrl } = getCurrentSchoolLinks();
-    if (homepageUrl) {
-      openExternalUrl(homepageUrl);
-    } else if (!state.sharedView) {
-      openSchoolLinkEditor();
-      showCopyToast("학교 홈페이지 주소를 확인해 주세요.", true);
-    } else {
-      showCopyToast("공유받은 학교의 홈페이지 주소를 찾지 못했어요.", true);
-    }
+  els.copyAddressBtn?.addEventListener("click", async () => {
+    const address = getCurrentSchoolInfo().address;
+    if (!address) return showCopyToast("학교 주소를 찾지 못했어요.", true);
+    await copyText(address, "학교 주소를 복사했어요.");
   });
-  els.noticeBtn?.addEventListener("click", () => {
-    const { noticeUrl } = getCurrentSchoolLinks();
-    if (noticeUrl) {
-      openExternalUrl(noticeUrl);
-    } else {
-      openSchoolLinkEditor();
-      showCopyToast("공지사항 게시판 주소를 한 번만 등록해 주세요.");
-    }
+  els.copyPhoneBtn?.addEventListener("click", async () => {
+    const phoneNumber = getCurrentSchoolInfo().phoneNumber;
+    if (!phoneNumber) return showCopyToast("대표전화 정보를 찾지 못했어요.", true);
+    await copyText(phoneNumber, "학교 대표전화를 복사했어요.");
   });
+  els.refreshSchoolInfoBtn?.addEventListener("click", refreshCurrentSchoolInfo);
+  els.tomorrowDetailBtn?.addEventListener("click", showTomorrowDetails);
 
   els.resetBtn.addEventListener("click", () => {
     if (!state.profileState.profiles.length) return;
@@ -400,10 +400,9 @@ function applyProfileToRuntime(profile) {
   state.contextVersion += 1;
   state.sharedView = null;
   state.sharedHomepageUrl = "";
-  state.linkEditorOpen = false;
   state.selectedSchool = normalizeSchool({
     ...profile.school,
-    homepageUrl: profile.links?.homepageUrl || ""
+    homepageUrl: profile.school?.homepageUrl || profile.links?.homepageUrl || ""
   });
   els.gradeInput.value = profile.grade || "1";
   els.classInput.value = profile.className || "1";
@@ -418,7 +417,6 @@ function activateSharedView(sharedState) {
     className: sharedState.className || "1",
     semester: sharedState.semester || "1"
   };
-  state.linkEditorOpen = false;
   state.selectedSchool = normalizeSchool(sharedState.school);
   state.sharedHomepageUrl = state.selectedSchool.homepageUrl || "";
   els.gradeInput.value = state.sharedView.grade;
@@ -431,7 +429,6 @@ function exitSharedView() {
   clearShareQuery();
   state.sharedView = null;
   state.sharedHomepageUrl = "";
-  state.linkEditorOpen = false;
   const profile = getActiveProfile();
   if (profile) {
     applyProfileToRuntime(profile);
@@ -457,13 +454,16 @@ function clearRuntimeData(clearSchool = true) {
   state.meal = null;
   state.todaySchedules = [];
   state.todayMeal = null;
+  state.tomorrowSchedules = [];
+  state.tomorrowMeal = null;
+  state.tomorrowStatus = "idle";
+  state.tomorrowMessage = "";
   state.timetable = [];
   state.timetableStatus = "idle";
   state.timetableMessage = "";
   state.timetableNotice = "";
   state.schools = [];
   state.classSwitcherOpen = false;
-  state.linkEditorOpen = false;
   if (clearSchool) state.sharedHomepageUrl = "";
   window.clearTimeout(state.timetableAutoTimer);
 }
@@ -478,7 +478,7 @@ async function selectProfile(profileId) {
   applyProfileToRuntime(profile);
   setSelectedDateToToday();
   renderAll();
-  await Promise.allSettled([loadMonthData(), enrichProfileHomepage(profile.id)]);
+  await Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(profile.id)]);
   renderAll();
   scrollToTodaySummary(true);
 }
@@ -497,7 +497,7 @@ function openProfileEditor(mode, profileId = null, shouldScroll = true) {
   state.profileEditorMode = mode;
   state.editingProfileId = profile?.id || null;
   state.draftSchool = profile
-    ? normalizeSchool({ ...profile.school, homepageUrl: profile.links?.homepageUrl || "" })
+    ? normalizeSchool({ ...profile.school, homepageUrl: profile.school?.homepageUrl || profile.links?.homepageUrl || "" })
     : null;
   els.nicknameInput.value = profile?.nickname || ProfileStore.suggestNickname(state.profileState);
   els.gradeInput.value = profile?.grade || "1";
@@ -559,7 +559,7 @@ function renderDraftSchoolPreview() {
     <span class="setting-label">선택한 학교</span>
     <strong>${escapeHtml(state.draftSchool.schoolName)}</strong>
     <p>${escapeHtml(state.draftSchool.region || "")} · ${escapeHtml(state.draftSchool.schoolType || "학교")}</p>
-    <p>${state.draftSchool.homepageUrl ? "학교 홈페이지가 자동으로 연결됩니다." : "홈페이지 주소는 등록 후 다시 확인할 수 있어요."}</p>
+    <p>대표전화·주소·홈페이지는 등록 후 나이스에서 자동으로 연결됩니다.</p>
   `;
 }
 
@@ -607,7 +607,7 @@ async function saveProfileFromEditor() {
     applyProfileToRuntime(profile);
     setSelectedDateToToday();
     renderAll();
-    await Promise.allSettled([loadMonthData(), enrichProfileHomepage(profile.id)]);
+    await Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(profile.id)]);
     renderAll();
     showCopyToast(wasEditing ? "자녀 정보를 수정했어요." : "자녀를 등록했어요.");
     scrollToTodaySummary(true);
@@ -630,7 +630,7 @@ async function deleteEditingProfile() {
   if (nextProfile) {
     applyProfileToRuntime(nextProfile);
     setSelectedDateToToday();
-    await Promise.allSettled([loadMonthData(), enrichProfileHomepage(nextProfile.id)]);
+    await Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(nextProfile.id)]);
   } else {
     clearRuntimeData();
     openProfileEditor("add");
@@ -753,6 +753,8 @@ async function loadMonthData() {
   state.scheduleMessage = "학사일정을 불러오는 중입니다.";
   state.mealStatus = "loading";
   state.mealMessage = "급식정보를 불러오는 중입니다.";
+  state.tomorrowStatus = "loading";
+  state.tomorrowMessage = "내일 정보를 불러오는 중입니다.";
   renderCalendar();
   renderScheduleDetail();
   renderMealDetail();
@@ -793,7 +795,7 @@ async function loadMonthData() {
   }
 
   updateTodaySnapshot();
-  await loadDayData(contextVersion);
+  await Promise.allSettled([loadTomorrowPreview(contextVersion, school), loadDayData(contextVersion)]);
 }
 
 function isCurrentContext(contextVersion, school, monthPrefix = "") {
@@ -895,10 +897,11 @@ function renderAll() {
   renderProfileEditor();
   renderSharedViewBanner();
   renderSelectedSchool();
-  renderSchoolLinks();
   renderMonthTitle();
   renderCalendar();
   renderTodaySummary();
+  renderTomorrowPreview();
+  renderSchoolInfo();
   renderDetails();
   renderView();
 }
@@ -971,92 +974,80 @@ function renderSelectedSchool() {
   els.shareSchoolBtn.hidden = false;
 }
 
-function getCurrentSchoolLinks() {
-  if (state.sharedView) {
-    return {
-      homepageUrl: state.sharedHomepageUrl || state.selectedSchool?.homepageUrl || "",
-      noticeUrl: ""
-    };
-  }
-
-  const profile = getActiveProfile();
+function getCurrentSchoolInfo() {
+  const profile = state.sharedView ? null : getActiveProfile();
+  const school = state.selectedSchool || {};
   return {
-    homepageUrl: profile?.links?.homepageUrl || state.selectedSchool?.homepageUrl || "",
-    noticeUrl: profile?.links?.noticeUrl || ""
+    schoolName: school.schoolName || profile?.school?.schoolName || "",
+    region: school.region || profile?.school?.region || "",
+    schoolType: school.schoolType || profile?.school?.schoolType || "학교",
+    address: school.address || profile?.school?.address || "",
+    phoneNumber: school.phoneNumber || profile?.school?.phoneNumber || "",
+    homepageUrl: state.sharedView
+      ? state.sharedHomepageUrl || school.homepageUrl || ""
+      : profile?.school?.homepageUrl || profile?.links?.homepageUrl || school.homepageUrl || ""
   };
 }
 
-function renderSchoolLinks() {
-  if (!els.schoolLinksCard) return;
+function renderSchoolInfo() {
+  if (!els.schoolInfoCard) return;
   const hasSchool = Boolean(state.selectedSchool);
-  els.schoolLinksCard.hidden = !hasSchool;
+  els.schoolInfoCard.hidden = !hasSchool || state.activeTab !== "all";
   if (!hasSchool) return;
 
-  const { homepageUrl, noticeUrl } = getCurrentSchoolLinks();
-  const isShared = Boolean(state.sharedView);
+  const info = getCurrentSchoolInfo();
+  els.schoolInfoTitle.textContent = info.schoolName || "선택한 학교";
+  const compactBits = [info.phoneNumber, info.region, info.schoolType].filter(Boolean);
+  els.schoolInfoCompact.textContent = compactBits.join(" · ") || "학교 기본정보를 확인하고 있어요.";
 
-  els.openLinkEditorBtn.hidden = isShared;
-  els.linkEditor.hidden = isShared || !state.linkEditorOpen;
+  els.schoolInfoToggleBtn.setAttribute("aria-expanded", String(state.schoolInfoExpanded));
+  const toggleLabel = state.schoolInfoExpanded ? "학교정보 접기" : "학교정보 펼치기";
+  els.schoolInfoToggleBtn.setAttribute("aria-label", toggleLabel);
+  els.schoolInfoToggleBtn.setAttribute("title", toggleLabel);
+  els.schoolInfoToggleBtn.classList.toggle("expanded", state.schoolInfoExpanded);
+  els.schoolInfoDetails.hidden = !state.schoolInfoExpanded;
 
-  els.homepageBtn.disabled = isShared && !homepageUrl;
-  els.homepageButtonHint.textContent = homepageUrl
-    ? getDisplayHost(homepageUrl) || "학교 사이트 바로가기"
-    : isShared ? "홈페이지 정보를 찾지 못했어요" : "주소를 확인하거나 직접 등록해 주세요";
+  els.schoolPhoneText.textContent = info.phoneNumber || "대표전화 정보를 불러오지 못했어요.";
+  els.schoolPhoneRow.classList.toggle("missing", !info.phoneNumber);
+  els.callSchoolBtn.hidden = !info.phoneNumber;
+  els.copyPhoneBtn.hidden = !info.phoneNumber;
+  els.callSchoolBtn.href = info.phoneNumber ? `tel:${normalizePhoneForTel(info.phoneNumber)}` : "#";
 
-  els.noticeBtn.hidden = isShared;
-  els.noticeBtn.classList.toggle("notice-needs-setup", !noticeUrl);
-  els.noticeButtonLabel.textContent = noticeUrl ? "공지사항" : "공지사항 등록";
-  els.noticeButtonHint.textContent = noticeUrl
-    ? getDisplayHost(noticeUrl) || "공지 게시판 바로가기"
-    : "학교 공지 게시판 주소를 한 번만 등록";
+  els.schoolAddressText.textContent = info.address || "주소 정보를 불러오지 못했어요.";
+  els.schoolAddressRow.classList.toggle("missing", !info.address);
+  els.copyAddressBtn.hidden = !info.address;
 
-  els.schoolLinksHint.textContent = isShared
-    ? "공유받은 학교는 홈페이지 바로가기만 임시로 제공합니다."
-    : homepageUrl && noticeUrl
-      ? "선택한 자녀의 학교 홈페이지와 공지사항으로 바로 이동할 수 있어요."
-      : homepageUrl
-        ? "학교 홈페이지는 자동 연결됐어요. 공지사항 주소만 한 번 등록해 주세요."
-        : "홈페이지 주소를 찾지 못했어요. 바로가기 설정에서 직접 등록할 수 있어요.";
+  els.schoolHomepageBtn.hidden = !info.homepageUrl;
+  els.schoolInfoNote.textContent = info.homepageUrl || info.phoneNumber || info.address
+    ? "나이스 학교기본정보 기준"
+    : "학교정보를 찾지 못했어요.";
 }
 
-function openSchoolLinkEditor() {
-  if (state.sharedView) return;
+function toggleSchoolInfo() {
+  state.schoolInfoExpanded = !state.schoolInfoExpanded;
+  localStorage.setItem("myChildToday.schoolInfoExpanded", String(state.schoolInfoExpanded));
+  renderSchoolInfo();
+}
+
+function normalizePhoneForTel(value = "") {
+  return String(value).replace(/[^\d+]/g, "");
+}
+
+async function refreshCurrentSchoolInfo() {
+  if (!state.selectedSchool) return;
   const profile = getActiveProfile();
-  if (!profile) {
-    showCopyToast("먼저 자녀를 등록해 주세요.", true);
-    return;
-  }
-
-  state.linkEditorOpen = true;
-  els.homepageUrlInput.value = profile.links?.homepageUrl || "";
-  els.noticeUrlInput.value = profile.links?.noticeUrl || "";
-  renderSchoolLinks();
-  requestAnimationFrame(() => scrollToViewSection(els.schoolLinksCard, true));
-}
-
-function closeSchoolLinkEditor() {
-  state.linkEditorOpen = false;
-  renderSchoolLinks();
-}
-
-async function saveSchoolLinks() {
-  const profile = getActiveProfile();
-  if (!profile || state.sharedView) return;
-
+  if (profile && !state.sharedView) state.schoolInfoLookupAttempts.delete(profile.id);
+  els.refreshSchoolInfoBtn.disabled = true;
+  if (els.refreshSchoolInfoText) els.refreshSchoolInfoText.textContent = "확인 중…";
   try {
-    state.profileState = ProfileStore.updateProfileLinks(profile.id, {
-      homepageUrl: els.homepageUrlInput.value,
-      noticeUrl: els.noticeUrlInput.value
-    });
-    const updatedProfile = getActiveProfile();
-    if (state.selectedSchool) {
-      state.selectedSchool.homepageUrl = updatedProfile?.links?.homepageUrl || "";
-    }
-    state.linkEditorOpen = false;
+    const updated = state.sharedView
+      ? await enrichSharedSchoolInfo(true)
+      : profile ? await enrichProfileSchoolInfo(profile.id, true) : false;
     renderAll();
-    showCopyToast("학교 바로가기를 저장했어요.");
-  } catch (error) {
-    showCopyToast(error.message || "바로가기를 저장하지 못했어요.", true);
+    showCopyToast(updated ? "학교정보를 다시 확인했어요." : "학교정보를 찾지 못했어요. 잠시 후 다시 시도해 주세요.", !updated);
+  } finally {
+    els.refreshSchoolInfoBtn.disabled = false;
+    if (els.refreshSchoolInfoText) els.refreshSchoolInfoText.textContent = "정보 다시 확인";
   }
 }
 
@@ -1069,45 +1060,46 @@ function openExternalUrl(value, emptyMessage = "등록된 주소가 없어요.")
   }
 }
 
-function getDisplayHost(value) {
-  try {
-    return new URL(value).hostname.replace(/^www\./, "");
-  } catch (error) {
-    return "";
-  }
-}
-
-async function enrichProfileHomepage(profileId) {
+async function enrichProfileSchoolInfo(profileId, force = false) {
   const profile = state.profileState.profiles.find((item) => item.id === profileId);
-  if (!profile || profile.links?.homepageUrl || state.homepageLookupAttempts.has(profileId)) return;
-  state.homepageLookupAttempts.add(profileId);
+  if (!profile) return false;
+  const hasCoreInfo = Boolean(profile.school?.phoneNumber && profile.school?.address && (profile.school?.homepageUrl || profile.links?.homepageUrl));
+  if (!force && hasCoreInfo) return true;
+  if (!force && state.schoolInfoLookupAttempts.has(profileId)) return false;
+  state.schoolInfoLookupAttempts.add(profileId);
 
   try {
     const schools = await fetchSchools(profile.school.schoolName, profile.school.officeCode);
     const matched = schools.map(normalizeSchool).find((school) => school.schoolCode === profile.school.schoolCode);
-    if (!matched?.homepageUrl) return;
+    if (!matched) return false;
 
-    state.profileState = ProfileStore.updateProfileLinks(profile.id, { homepageUrl: matched.homepageUrl });
+    state.profileState = ProfileStore.updateProfileSchoolInfo(profile.id, matched);
     if (!state.sharedView && state.profileState.activeProfileId === profile.id && state.selectedSchool) {
-      state.selectedSchool.homepageUrl = matched.homepageUrl;
+      state.selectedSchool = normalizeSchool({ ...state.selectedSchool, ...matched });
     }
-    renderSchoolLinks();
+    renderSchoolInfo();
+    return true;
   } catch (error) {
-    // 홈페이지 자동 보완 실패는 급식·시간표 이용을 막지 않습니다.
+    // 자동 보완 실패는 급식·시간표 이용을 막지 않습니다.
+    return false;
   }
 }
 
-async function enrichSharedHomepage() {
-  if (!state.sharedView || !state.selectedSchool || state.sharedHomepageUrl) return;
+async function enrichSharedSchoolInfo(force = false) {
+  if (!state.sharedView || !state.selectedSchool) return false;
+  const hasCoreInfo = Boolean(state.selectedSchool.phoneNumber && state.selectedSchool.address && state.sharedHomepageUrl);
+  if (!force && hasCoreInfo) return true;
   try {
     const schools = await fetchSchools(state.selectedSchool.schoolName, state.selectedSchool.officeCode);
     const matched = schools.map(normalizeSchool).find((school) => school.schoolCode === state.selectedSchool.schoolCode);
-    if (!state.sharedView || !matched?.homepageUrl) return;
-    state.sharedHomepageUrl = matched.homepageUrl;
-    state.selectedSchool.homepageUrl = matched.homepageUrl;
-    renderSchoolLinks();
+    if (!state.sharedView || !matched) return false;
+    state.sharedHomepageUrl = matched.homepageUrl || "";
+    state.selectedSchool = normalizeSchool({ ...state.selectedSchool, ...matched });
+    renderSchoolInfo();
+    return true;
   } catch (error) {
-    // 공유 화면에서는 홈페이지를 찾지 못해도 나머지 정보는 그대로 제공합니다.
+    // 공유 화면에서도 나머지 정보는 그대로 제공합니다.
+    return false;
   }
 }
 
@@ -1177,6 +1169,91 @@ function updateTodaySnapshot() {
 
   state.todaySchedules = state.schedules.filter((item) => item.date === todayKey);
   state.todayMeal = state.mealsByDate[todayKey] || null;
+}
+
+async function loadTomorrowPreview(contextVersion = state.contextVersion, school = state.selectedSchool) {
+  if (!school) return;
+  const tomorrow = addDays(new Date(), 1);
+  const tomorrowKey = formatDateKey(tomorrow);
+  const currentMonthPrefix = `${state.currentDate.getFullYear()}-${pad(state.currentDate.getMonth() + 1)}`;
+  const tomorrowMonthPrefix = tomorrowKey.slice(0, 7);
+
+  try {
+    if (tomorrowMonthPrefix === currentMonthPrefix) {
+      state.tomorrowSchedules = state.schedules.filter((item) => item.date === tomorrowKey);
+      state.tomorrowMeal = state.mealsByDate[tomorrowKey] || null;
+    } else {
+      const nextMonthDate = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), 1);
+      const [schedules, meals] = await Promise.all([
+        fetchSchedules(school, nextMonthDate),
+        fetchMeals(school, nextMonthDate)
+      ]);
+      if (!isCurrentContext(contextVersion, school)) return;
+      state.tomorrowSchedules = schedules.filter((item) => item.date === tomorrowKey);
+      state.tomorrowMeal = meals.find((item) => item.date === tomorrowKey) || null;
+    }
+    state.tomorrowStatus = "success";
+    state.tomorrowMessage = "";
+  } catch (error) {
+    if (!isCurrentContext(contextVersion, school)) return;
+    state.tomorrowSchedules = [];
+    state.tomorrowMeal = null;
+    state.tomorrowStatus = "error";
+    state.tomorrowMessage = "내일 정보를 불러오지 못했어요.";
+  }
+}
+
+function renderTomorrowPreview() {
+  if (!els.tomorrowPreviewCard) return;
+  const tomorrow = addDays(new Date(), 1);
+  const tomorrowKey = formatDateKey(tomorrow);
+  els.tomorrowPreviewTitle.textContent = `내일 ${formatKoreanDate(tomorrowKey)}`;
+  els.tomorrowDetailBtn.disabled = !state.selectedSchool;
+
+  if (!state.selectedSchool) {
+    els.tomorrowMealSummary.innerHTML = `<p class="empty">자녀를 등록하면 내일 급식이 표시됩니다.</p>`;
+    els.tomorrowScheduleSummary.innerHTML = `<p class="empty">자녀를 등록하면 내일 학교일정이 표시됩니다.</p>`;
+    return;
+  }
+  if (state.tomorrowStatus === "loading") {
+    els.tomorrowMealSummary.innerHTML = `<p class="empty">${renderLoadingText("내일 급식을 확인하는 중입니다")}</p>`;
+    els.tomorrowScheduleSummary.innerHTML = `<p class="empty">${renderLoadingText("내일 일정을 확인하는 중입니다")}</p>`;
+    return;
+  }
+
+  if (state.tomorrowMeal?.dishes?.length) {
+    const dishes = state.tomorrowMeal.dishes.slice(0, 3).map(escapeHtml).join(" · ");
+    const more = state.tomorrowMeal.dishes.length > 3 ? ` 외 ${state.tomorrowMeal.dishes.length - 3}종` : "";
+    els.tomorrowMealSummary.innerHTML = `<p class="tomorrow-primary">${dishes}${more}</p>${state.tomorrowMeal.calorie ? `<span class="tomorrow-badge">${escapeHtml(state.tomorrowMeal.calorie)}</span>` : ""}`;
+  } else {
+    els.tomorrowMealSummary.innerHTML = `<p class="empty">내일 등록된 급식이 없어요.</p>`;
+  }
+
+  if (state.tomorrowSchedules.length) {
+    els.tomorrowScheduleSummary.innerHTML = `<ul>${state.tomorrowSchedules.slice(0, 3).map((item) => `<li>${escapeHtml(item.title)}</li>`).join("")}</ul>${state.tomorrowSchedules.length > 3 ? `<p class="today-more">외 ${state.tomorrowSchedules.length - 3}건</p>` : ""}`;
+  } else {
+    els.tomorrowScheduleSummary.innerHTML = `<p class="empty">내일 예정된 학교일정이 없어요.</p>`;
+  }
+  if (state.tomorrowStatus === "error" && state.tomorrowMessage) {
+    els.tomorrowScheduleSummary.insertAdjacentHTML("beforeend", `<p class="detail-notice">${escapeHtml(state.tomorrowMessage)}</p>`);
+  }
+}
+
+async function showTomorrowDetails() {
+  if (!state.selectedSchool) return;
+  const tomorrow = addDays(new Date(), 1);
+  state.selectedDate = formatDateKey(tomorrow);
+  const targetMonth = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), 1);
+  const currentMonth = `${state.currentDate.getFullYear()}-${state.currentDate.getMonth()}`;
+  const nextMonth = `${targetMonth.getFullYear()}-${targetMonth.getMonth()}`;
+  if (currentMonth !== nextMonth) {
+    state.currentDate = targetMonth;
+    await loadMonthData();
+  } else {
+    await loadDayData();
+  }
+  renderAll();
+  document.querySelector("#detailArea")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function buildSummaryTitle(label, emoji, badgeHtml = "") {
@@ -1403,7 +1480,7 @@ function renderSchoolResults(schools, notice = "") {
           <h3>${escapeHtml(school.schoolName)}</h3>
           <p>${escapeHtml(school.region || "")} · ${escapeHtml(school.schoolType || "학교")}</p>
           <p>${escapeHtml(school.address || "주소 정보 없음")}</p>
-          <p>${school.homepageUrl ? "홈페이지 자동 연결 가능" : "홈페이지 주소 미제공"}</p>
+          <p>${[school.phoneNumber ? "대표전화" : "", school.homepageUrl ? "홈페이지" : ""].filter(Boolean).join(" · ") || "기본정보 자동 확인"}</p>
         </div>
         <button type="button" data-school-index="${index}" aria-label="${escapeHtml(school.schoolName)} 선택">이 학교 선택</button>
       </article>
@@ -1733,6 +1810,7 @@ function normalizeSchool(school = {}) {
     schoolCode: school.schoolCode || school.SD_SCHUL_CODE || "",
     schoolType: school.schoolType || school.SCHUL_KND_SC_NM || "학교",
     address: school.address || school.ORG_RDNMA || school.ORG_RDNDA || "",
+    phoneNumber: school.phoneNumber || school.ORG_TELNO || "",
     homepageUrl: ProfileStore.normalizeExternalUrl(
       school.homepageUrl || school.HMPG_ADRES || "",
       { allowEmpty: true, throwOnInvalid: false }
@@ -1932,6 +2010,12 @@ function cleanTextLines(value = "") {
     .split(/\n|,/g)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function addDays(date, amount) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
 }
 
 function formatDateKey(date) {

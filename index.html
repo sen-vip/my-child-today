@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <a class="skip-link" href="#mainContent">본문 바로가기</a>
   <header class="app-header">
     <div class="app-header-inner">
       <a class="brand-home" href="#home" aria-label="처음으로">
@@ -30,10 +31,10 @@
     <header class="hero" id="home">
       <span class="hero-eyebrow">여러 자녀의 학교생활</span>
       <h1>우리 아이의 오늘을 한눈에</h1>
-      <p>자녀별 급식, 시간표와 학교일정을 빠르게 확인하세요.</p>
+      <p>자녀별 오늘·내일 급식, 시간표와 학교일정을 빠르게 확인하세요.</p>
     </header>
 
-    <main>
+    <main id="mainContent" tabindex="-1">
       <section class="card child-switcher-card" id="profiles" aria-labelledby="profileListTitle">
         <div class="child-switcher-heading">
           <div>
@@ -82,7 +83,7 @@
               </label>
               <label class="search-field">
                 <span>학교명</span>
-                <input id="schoolKeyword" type="search" placeholder="예: 학돌중, 서울학돌초" autocomplete="off" />
+                <input id="schoolKeyword" type="search" placeholder="예: 대청중, 서울학돌초" autocomplete="off" />
               </label>
               <div class="search-field search-submit-field">
                 <span aria-hidden="true">검색</span>
@@ -139,61 +140,6 @@
         </div>
       </section>
 
-      <section class="card school-links-card" id="schoolLinksCard" hidden aria-labelledby="schoolLinksTitle">
-        <div class="school-links-heading">
-          <div>
-            <span class="kicker">학교 바로가기</span>
-            <h2 id="schoolLinksTitle">학교 소식을 더 빠르게</h2>
-          </div>
-          <button type="button" class="ghost-button link-settings-button" id="openLinkEditorBtn">바로가기 설정</button>
-        </div>
-
-        <div class="school-link-actions">
-          <button type="button" class="school-link-button homepage-link-button" id="homepageBtn">
-            <span class="school-link-icon" aria-hidden="true">🏫</span>
-            <span>
-              <strong>학교 홈페이지</strong>
-              <small id="homepageButtonHint">학교 사이트 바로가기</small>
-            </span>
-            <span class="external-link-mark" aria-hidden="true">↗</span>
-          </button>
-          <button type="button" class="school-link-button notice-link-button" id="noticeBtn">
-            <span class="school-link-icon" aria-hidden="true">📢</span>
-            <span>
-              <strong id="noticeButtonLabel">공지사항</strong>
-              <small id="noticeButtonHint">공지 게시판 바로가기</small>
-            </span>
-            <span class="external-link-mark" aria-hidden="true">↗</span>
-          </button>
-        </div>
-        <p class="school-links-hint" id="schoolLinksHint">학교 홈페이지는 자동으로 연결하고, 공지사항 주소는 한 번만 등록하면 돼요.</p>
-
-        <div class="link-editor" id="linkEditor" hidden>
-          <div class="link-editor-heading">
-            <div>
-              <strong>학교 바로가기 설정</strong>
-              <p>학교 홈페이지에서 공지사항 게시판을 연 뒤 주소를 복사해 붙여 넣어 주세요.</p>
-            </div>
-            <button type="button" class="ghost-button" id="cancelLinksBtn">닫기</button>
-          </div>
-          <div class="link-editor-grid">
-            <label>
-              <span>학교 홈페이지 주소</span>
-              <input id="homepageUrlInput" type="url" inputmode="url" placeholder="https://학교홈페이지주소" autocomplete="off" />
-            </label>
-            <label>
-              <span>공지사항 주소</span>
-              <input id="noticeUrlInput" type="url" inputmode="url" placeholder="https://학교홈페이지/공지사항" autocomplete="off" />
-            </label>
-          </div>
-          <p class="link-editor-help">주소를 비워 저장하면 해당 바로가기가 삭제돼요. 입력한 주소는 이 기기에만 저장됩니다.</p>
-          <div class="link-editor-actions">
-            <button type="button" class="ghost-button" id="openHomepageFromEditorBtn">학교 홈페이지 열기</button>
-            <button type="button" class="profile-save-button" id="saveLinksBtn">바로가기 저장</button>
-          </div>
-        </div>
-      </section>
-
       <nav class="main-view-tabs" role="tablist" aria-label="우리아이 오늘 보기 전환">
         <button type="button" class="active" data-view="all" role="tab" aria-selected="true">오늘</button>
         <button type="button" data-view="schedule" role="tab" aria-selected="false">일정</button>
@@ -225,6 +171,92 @@
             <strong id="todayTimetableTitle" class="summary-title summary-title-timetable"><span class="title-emoji" aria-hidden="true">🕘</span><span>시간표</span></strong>
             <div id="todayTimetableSummary" class="today-summary-body">학년·반·학기를 입력하고 시간표를 불러오면 표시됩니다.</div>
           </article>
+        </div>
+      </section>
+
+      <section class="card tomorrow-preview-card" id="tomorrowPreviewCard" data-view-section="summary" aria-live="polite">
+        <div class="tomorrow-preview-head">
+          <div>
+            <span class="kicker">내일 미리보기</span>
+            <h2 id="tomorrowPreviewTitle">내일 학교생활</h2>
+          </div>
+          <button type="button" class="ghost-button tomorrow-detail-button" id="tomorrowDetailBtn">내일 자세히 보기</button>
+        </div>
+        <div class="tomorrow-preview-grid">
+          <article>
+            <strong><span aria-hidden="true">🍱</span> 내일 급식</strong>
+            <div id="tomorrowMealSummary" class="tomorrow-preview-body">자녀를 등록해 주세요.</div>
+          </article>
+          <article>
+            <strong><span aria-hidden="true">📅</span> 내일 학교일정</strong>
+            <div id="tomorrowScheduleSummary" class="tomorrow-preview-body">자녀를 등록해 주세요.</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="card school-info-card" id="schoolInfoCard" data-view-section="summary" hidden aria-labelledby="schoolInfoTitle">
+        <div class="school-info-heading">
+          <div class="school-info-summary">
+            <span class="kicker">학교정보</span>
+            <h2 id="schoolInfoTitle">선택한 학교</h2>
+            <p id="schoolInfoCompact" aria-live="polite">대표전화와 주소를 확인할 수 있어요.</p>
+          </div>
+          <button type="button" class="school-info-toggle" id="schoolInfoToggleBtn"
+            aria-expanded="false" aria-controls="schoolInfoDetails" aria-label="학교정보 펼치기" title="학교정보 펼치기">
+            <svg class="school-info-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m7 9.5 5 5 5-5" />
+            </svg>
+          </button>
+        </div>
+        <div class="school-info-details" id="schoolInfoDetails" hidden>
+          <div class="school-info-content">
+            <dl class="school-info-list">
+              <div class="school-info-row" id="schoolPhoneRow">
+                <dt>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.2 3.8 9.4 8l-2 1.7a15.2 15.2 0 0 0 6.9 6.9l1.7-2 4.2 2.2-.7 3a2 2 0 0 1-2 1.5C9.4 20.8 3.2 14.6 2.7 6.5a2 2 0 0 1 1.5-2l3-.7Z" /></svg>
+                  <span>대표전화</span>
+                </dt>
+                <dd><span id="schoolPhoneText">정보 없음</span></dd>
+                <div class="school-info-actions">
+                  <a class="school-info-action primary" id="callSchoolBtn" href="#">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.2 3.8 9.4 8l-2 1.7a15.2 15.2 0 0 0 6.9 6.9l1.7-2 4.2 2.2-.7 3a2 2 0 0 1-2 1.5C9.4 20.8 3.2 14.6 2.7 6.5a2 2 0 0 1 1.5-2l3-.7Z" /></svg>
+                    전화하기
+                  </a>
+                  <button type="button" class="school-info-action secondary" id="copyPhoneBtn">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+                    번호 복사
+                  </button>
+                </div>
+              </div>
+              <div class="school-info-row" id="schoolAddressRow">
+                <dt>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg>
+                  <span>주소</span>
+                </dt>
+                <dd id="schoolAddressText">정보 없음</dd>
+                <div class="school-info-actions">
+                  <button type="button" class="school-info-action secondary" id="copyAddressBtn">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+                    주소 복사
+                  </button>
+                </div>
+              </div>
+            </dl>
+            <div class="school-info-footer-actions">
+              <button type="button" class="school-info-homepage" id="schoolHomepageBtn">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" /></svg>
+                학교 홈페이지 열기
+                <span aria-hidden="true">↗</span>
+              </button>
+            </div>
+            <div class="school-info-source">
+              <span id="schoolInfoNote">나이스 학교기본정보 기준</span>
+              <button type="button" class="school-info-refresh" id="refreshSchoolInfoBtn">
+                <span aria-hidden="true">↻</span>
+                <span id="refreshSchoolInfoText">정보 다시 확인</span>
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

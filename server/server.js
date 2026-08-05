@@ -31,6 +31,7 @@ app.get("/api/schools", async (req, res) => {
       schoolCode: row.SD_SCHUL_CODE,
       schoolType: row.SCHUL_KND_SC_NM,
       address: row.ORG_RDNMA || row.ORG_RDNDA || "",
+      phoneNumber: row.ORG_TELNO || "",
       homepageUrl: row.HMPG_ADRES || ""
     }));
 

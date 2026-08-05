@@ -1,5 +1,5 @@
 // ============================================================
-// 우리아이 오늘 v0.3 - 자녀 프로필·학교 바로가기 로컬 저장 모듈
+// 우리아이 오늘 v0.4.1 - 자녀 프로필·자동 학교정보 로컬 저장 모듈
 // 오늘학교의 localStorage 키와 완전히 분리되어 동작합니다.
 // ============================================================
 
@@ -72,6 +72,7 @@
       schoolCode: safeString(school.schoolCode || school.SD_SCHUL_CODE),
       schoolType: safeString(school.schoolType || school.SCHUL_KND_SC_NM, "학교"),
       address: safeString(school.address || school.ORG_RDNMA || school.ORG_RDNDA),
+      phoneNumber: safeString(school.phoneNumber || school.ORG_TELNO),
       homepageUrl: normalizeStoredUrl(school.homepageUrl || school.HMPG_ADRES)
     };
   }
@@ -94,7 +95,9 @@
         officeCode: school.officeCode,
         schoolCode: school.schoolCode,
         schoolType: school.schoolType,
-        address: school.address
+        address: school.address,
+        phoneNumber: school.phoneNumber,
+        homepageUrl: school.homepageUrl
       },
       grade: normalizeNumber(profile.grade, 1, 6),
       className: normalizeNumber(profile.className, 1, 30),
@@ -170,7 +173,9 @@
         officeCode: school.officeCode,
         schoolCode: school.schoolCode,
         schoolType: school.schoolType,
-        address: school.address
+        address: school.address,
+        phoneNumber: school.phoneNumber,
+        homepageUrl: school.homepageUrl
       },
       grade: normalizeNumber(input.grade, 1, 6),
       className: normalizeNumber(input.className, 1, 30),
@@ -229,6 +234,32 @@
     return saveState(state);
   }
 
+  function updateProfileSchoolInfo(profileId, schoolInfo = {}) {
+    const state = loadState();
+    const index = state.profiles.findIndex((profile) => profile.id === profileId);
+    if (index < 0) throw new Error("수정할 자녀 정보를 찾지 못했어요.");
+
+    const profile = state.profiles[index];
+    const normalized = normalizeSchool({ ...profile.school, ...schoolInfo });
+    const homepageUrl = normalizeStoredUrl(schoolInfo.homepageUrl || normalized.homepageUrl || profile.links?.homepageUrl);
+
+    state.profiles[index] = {
+      ...profile,
+      school: {
+        ...profile.school,
+        address: normalized.address || profile.school.address || "",
+        phoneNumber: normalized.phoneNumber || profile.school.phoneNumber || "",
+        homepageUrl
+      },
+      links: {
+        ...profile.links,
+        homepageUrl
+      },
+      updatedAt: new Date().toISOString()
+    };
+    return saveState(state);
+  }
+
   function deleteProfile(profileId) {
     const state = loadState();
     const index = state.profiles.findIndex((profile) => profile.id === profileId);
@@ -266,6 +297,7 @@
     addProfile,
     updateProfile,
     updateProfileLinks,
+    updateProfileSchoolInfo,
     deleteProfile,
     setActiveProfile,
     getActiveProfile,

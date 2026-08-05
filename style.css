@@ -2195,22 +2195,24 @@ body[data-active-view="timetable"] .detail-grid {
 }
 
 /* ============================================================
-   v0.3 학교 홈페이지·공지사항 바로가기
+   v0.4.0 오늘·내일 부모 홈 + 자동 학교정보 카드
    ============================================================ */
-.school-links-card {
+.tomorrow-preview-card,
+.school-info-card {
   padding: 20px 22px;
 }
 
-.school-links-heading,
-.link-editor-heading,
-.link-editor-actions {
+.tomorrow-preview-head,
+.school-info-heading,
+.school-info-footer-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
 }
 
-.school-links-heading h2 {
+.tomorrow-preview-head h2,
+.school-info-heading h2 {
   margin: 3px 0 0;
   color: var(--ink-strong);
   font-size: 20px;
@@ -2218,199 +2220,614 @@ body[data-active-view="timetable"] .detail-grid {
   letter-spacing: -0.035em;
 }
 
-.link-settings-button {
-  flex: 0 0 auto;
+.school-info-heading p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
 }
 
-.school-link-actions {
+.tomorrow-preview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-top: 16px;
 }
 
-.school-link-button {
+.tomorrow-preview-grid article {
   min-width: 0;
-  min-height: 78px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+  padding: 15px 16px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface-subtle);
-  color: var(--ink);
-  text-align: left;
-  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
 }
 
-.school-link-button:hover:not(:disabled) {
-  border-color: #cfd3ff;
-  background: var(--primary-soft);
-  transform: translateY(-1px);
-}
-
-.school-link-button:disabled {
-  cursor: default;
-  opacity: 0.62;
-}
-
-.school-link-button.notice-needs-setup {
-  border-style: dashed;
-  background: #fbfbff;
-  opacity: 1;
-}
-
-.school-link-button.notice-needs-setup:hover {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-}
-
-.school-link-icon {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: var(--surface);
-  font-size: 21px;
-  box-shadow: inset 0 0 0 1px var(--line);
-}
-
-.school-link-button strong,
-.school-link-button small {
-  display: block;
-  min-width: 0;
-}
-
-.school-link-button strong {
+.tomorrow-preview-grid strong {
   color: var(--ink-strong);
-  font-size: 15px;
-  line-height: 1.35;
+  font-size: 14px;
 }
 
-.school-link-button small {
-  margin-top: 3px;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.external-link-mark {
-  color: var(--muted-light);
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.school-links-hint,
-.link-editor-help {
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.link-editor {
-  margin-top: 16px;
-  padding: 18px;
-  border: 1px solid #d9dcff;
-  border-radius: 14px;
-  background: #fbfbff;
-}
-
-.link-editor-heading {
-  align-items: flex-start;
-}
-
-.link-editor-heading strong {
-  color: var(--ink-strong);
-  font-size: 15px;
-}
-
-.link-editor-heading p {
-  margin: 3px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.link-editor-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.link-editor-grid label {
-  min-width: 0;
-  display: grid;
-  gap: 7px;
-}
-
-.link-editor-grid label > span {
+.tomorrow-preview-body {
+  margin-top: 10px;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.tomorrow-preview-body ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.tomorrow-primary {
+  margin: 0;
   font-weight: 650;
 }
 
-.link-editor-grid input {
-  width: 100%;
-  min-height: 44px;
-  padding: 10px 12px;
-  border: 1px solid var(--line-strong);
+.tomorrow-badge {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fff3d9;
+  color: #9a6100;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.school-info-card {
+  border-color: #e0e3e8;
+  background: #fcfcfd;
+}
+
+.school-info-toggle {
+  flex: 0 0 auto;
+}
+
+.school-info-details {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.school-info-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.school-info-row {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.school-info-row dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.school-info-row dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-strong);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.school-info-row.missing dd {
+  color: var(--muted-light);
+  font-weight: 500;
+}
+
+.school-info-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.school-info-action,
+.school-info-homepage {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 11px;
+  border: 1px solid var(--primary);
   border-radius: var(--radius-sm);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.school-info-action.secondary {
+  border-color: var(--line-strong);
   background: var(--surface);
   color: var(--ink);
 }
 
-.link-editor-grid input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(86, 97, 215, 0.11);
-  outline: none;
-}
-
-.link-editor-actions {
-  justify-content: flex-end;
+.school-info-footer-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
   margin-top: 16px;
 }
 
+.school-info-homepage {
+  background: var(--primary);
+  color: #fff;
+}
+
+.school-info-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 @media (max-width: 640px) {
-  .school-links-card {
+  .tomorrow-preview-card,
+  .school-info-card {
     padding: 16px;
   }
 
-  .school-links-heading {
+  .tomorrow-preview-head,
+  .school-info-heading {
     align-items: flex-start;
   }
 
-  .school-links-heading h2 {
+  .tomorrow-preview-head h2,
+  .school-info-heading h2 {
     font-size: 18px;
   }
 
-  .link-settings-button {
+  .tomorrow-detail-button,
+  .school-info-toggle {
     min-height: 34px;
     padding: 7px 9px;
     font-size: 11px;
   }
 
-  .school-link-actions,
-  .link-editor-grid {
+  .tomorrow-preview-grid {
     grid-template-columns: 1fr;
   }
 
-  .school-link-button {
-    min-height: 70px;
+  .school-info-row {
+    grid-template-columns: 70px minmax(0, 1fr);
   }
 
-  .link-editor-heading,
-  .link-editor-actions {
+  .school-info-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 380px) {
+  .tomorrow-preview-head,
+  .school-info-heading {
+    flex-direction: column;
+  }
+
+  .tomorrow-detail-button,
+  .school-info-toggle {
+    width: 100%;
+  }
+
+  .school-info-footer-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .link-editor-actions button {
+  .school-info-footer-actions button {
     width: 100%;
+  }
+}
+
+
+/* ============================================================
+   v0.4.1 부모형 가독성·접근성 개선
+   - 핵심 정보 10~15% 확대
+   - 44px 이상 터치 영역
+   - 키보드 초점과 저대비 문구 보완
+   - 학교정보 카드의 행동 위계 재정리
+   ============================================================ */
+
+:root {
+  --muted-light: #667085;
+}
+
+body {
+  font-size: 16px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--ink-strong);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-160%);
+  transition: transform 0.16s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #737bff;
+  outline-offset: 3px;
+}
+
+/* 자녀 전환: 이름과 학교 정보를 한눈에 읽고 누르기 쉽게 */
+.child-profile-chip {
+  min-height: 68px;
+  padding: 13px 15px;
+}
+
+.child-profile-chip strong {
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.child-profile-chip span {
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.profile-add-button,
+.tomorrow-detail-button {
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 부모가 매일 보는 오늘·내일 정보의 본문 크기 확대 */
+.today-summary-date {
+  font-size: 14px;
+}
+
+.today-summary-item strong {
+  font-size: 17px;
+}
+
+.today-summary-body {
+  color: #344054;
+  font-size: 15.5px;
+  line-height: 1.72;
+}
+
+.today-calorie,
+.today-more {
+  color: #667085;
+  font-size: 13px;
+}
+
+.tomorrow-preview-head h2 {
+  font-size: 22px;
+}
+
+.tomorrow-preview-grid strong {
+  font-size: 15px;
+}
+
+.tomorrow-preview-body {
+  color: #344054;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.tomorrow-badge,
+.title-badge,
+.meal-name,
+.meal-calorie {
+  font-size: 12px;
+}
+
+/* 학교정보: 표가 아닌 모바일 연락처 카드처럼 읽히도록 */
+.school-info-card {
+  padding: 24px 26px;
+  border-color: #d8dde5;
+  background: var(--surface);
+}
+
+.school-info-heading {
+  min-height: 54px;
+  align-items: center;
+}
+
+.school-info-summary {
+  min-width: 0;
+}
+
+.school-info-heading h2 {
+  margin-top: 4px;
+  font-size: clamp(22px, 3vw, 24px);
+  line-height: 1.28;
+  font-weight: 800;
+}
+
+.school-info-heading p {
+  margin-top: 6px;
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.school-info-toggle {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  background: var(--surface);
+  color: #475467;
+}
+
+.school-info-toggle:hover {
+  border-color: #b7bfca;
+  background: var(--surface-muted);
+  color: var(--ink-strong);
+}
+
+.school-info-chevron {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.18s ease;
+}
+
+.school-info-toggle.expanded .school-info-chevron {
+  transform: rotate(180deg);
+}
+
+.school-info-details {
+  margin-top: 18px;
+  padding-top: 4px;
+}
+
+.school-info-content {
+  max-width: 820px;
+}
+
+.school-info-row {
+  grid-template-columns: 108px minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 18px 0;
+}
+
+.school-info-row dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #475467;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.school-info-row dt svg,
+.school-info-action svg,
+.school-info-homepage svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.school-info-row dd {
+  color: var(--ink-strong);
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.58;
+}
+
+.school-info-row.missing dd {
+  color: #667085;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.school-info-actions {
+  gap: 8px;
+}
+
+.school-info-action,
+.school-info-homepage {
+  min-height: 46px;
+  gap: 7px;
+  padding: 10px 15px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.school-info-action.primary {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: #4049b5;
+}
+
+.school-info-action.primary:hover {
+  background: #e5e7ff;
+}
+
+.school-info-action.secondary {
+  border-color: #cfd5dd;
+  background: var(--surface);
+  color: #344054;
+}
+
+.school-info-action.secondary:hover {
+  border-color: #adb5c2;
+  background: var(--surface-muted);
+}
+
+.school-info-footer-actions {
+  margin-top: 18px;
+}
+
+.school-info-homepage {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.school-info-homepage:hover {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+}
+
+.school-info-source {
+  display: flex;
+  align-items: center;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.school-info-refresh {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border: 0;
+  background: transparent;
+  color: #4f58c4;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.school-info-refresh:hover {
+  color: var(--primary-hover);
+}
+
+.school-info-refresh:disabled {
+  color: #98a2b3;
+  cursor: wait;
+}
+
+@media (max-width: 640px) {
+  .school-info-card,
+  .tomorrow-preview-card {
+    padding: 18px;
+  }
+
+  .school-info-heading {
+    align-items: center;
+  }
+
+  .school-info-heading h2,
+  .tomorrow-preview-head h2 {
+    font-size: 21px;
+  }
+
+  .school-info-toggle {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
+
+  .school-info-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    padding: 18px 0;
+  }
+
+  .school-info-row dt,
+  .school-info-row dd,
+  .school-info-actions {
+    grid-column: 1;
+  }
+
+  .school-info-row dd {
+    font-size: 16px;
+  }
+
+  .school-info-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 5px;
+  }
+
+  .school-info-action {
+    flex: 1 1 0;
+  }
+
+  .school-info-homepage {
+    width: 100%;
+  }
+
+  .school-info-source {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .profile-add-button,
+  .tomorrow-detail-button {
+    min-height: 44px;
+    padding: 9px 12px;
+    font-size: 14px;
+  }
+
+  .today-summary-body,
+  .tomorrow-preview-body {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 380px) {
+  .school-info-heading {
+    flex-direction: row;
+  }
+
+  .school-info-toggle {
+    width: 44px;
+  }
+
+  .school-info-actions {
+    flex-direction: column;
+  }
+
+  .school-info-action {
+    width: 100%;
+  }
+
+  .school-info-footer-actions {
+    flex-direction: column;
   }
 }
