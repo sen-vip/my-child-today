@@ -76,7 +76,7 @@ const state = {
   selectedSchool: null,
   currentDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   selectedDate: formatDateKey(new Date()),
-  activeTab: "all",
+  activeTab: "calendar",
   schedules: [],
   meals: [],
   mealsByDate: {},
@@ -173,8 +173,7 @@ const els = {
   semesterInput: document.querySelector("#semesterInput"),
   reloadTimetableBtn: document.querySelector("#reloadTimetableBtn"),
   viewTabs: document.querySelectorAll("[data-view]"),
-  viewSections: document.querySelectorAll("[data-view-section]"),
-  panels: document.querySelectorAll("[data-panel]")
+  viewSections: document.querySelectorAll("[data-root-view]")
 };
 
 function init() {
@@ -187,14 +186,9 @@ function init() {
   if (sharedState.school) {
     activateSharedView(sharedState);
     Promise.allSettled([loadMonthData(), enrichSharedSchoolInfo()]).then(() => {
+      state.activeTab = "calendar";
       renderAll();
-      requestAnimationFrame(() => {
-        if (sharedState.date) {
-          document.querySelector("#detailArea")?.scrollIntoView({ behavior: "auto", block: "start" });
-        } else {
-          scrollToTodaySummary(false);
-        }
-      });
+      requestAnimationFrame(() => scrollToCalendarArea(false));
     });
     return;
   }
@@ -203,10 +197,12 @@ function init() {
   if (activeProfile) {
     applyProfileToRuntime(activeProfile);
     Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(activeProfile.id)]).then(() => {
+      state.activeTab = "calendar";
       renderAll();
-      requestAnimationFrame(() => scrollToTodaySummary(false));
+      requestAnimationFrame(() => scrollToCalendarArea(false));
     });
   } else {
+    state.activeTab = "settings";
     openProfileEditor("add", null, false);
     renderAll();
   }
@@ -223,10 +219,9 @@ function scrollToViewSection(target, smooth = true) {
 
   // 고정 헤더와 보기 탭이 콘텐츠 제목을 덮지 않도록 실제 높이를 합산합니다.
   const headerHeight = document.querySelector(".app-header")?.offsetHeight || 74;
-  const tabsHeight = document.querySelector(".main-view-tabs")?.offsetHeight || 56;
   const breathingRoom = 18;
   const targetTop = target.getBoundingClientRect().top + window.scrollY
-    - headerHeight - tabsHeight - breathingRoom;
+    - headerHeight - breathingRoom;
 
   window.scrollTo({
     top: Math.max(targetTop, 0),
@@ -236,6 +231,11 @@ function scrollToViewSection(target, smooth = true) {
 
 function scrollToTodaySummary(smooth = true) {
   const target = els.todaySummaryCard || document.querySelector("#todaySummaryCard") || document.querySelector("#calendarArea");
+  scrollToViewSection(target, smooth);
+}
+
+function scrollToCalendarArea(smooth = true) {
+  const target = document.querySelector("#calendarArea") || document.querySelector("#todaySummaryCard");
   scrollToViewSection(target, smooth);
 }
 
@@ -255,6 +255,14 @@ function bindEvents() {
       if (button.dataset.keyword) els.schoolKeyword.value = button.dataset.keyword;
       await handleSchoolSearch(button.textContent.trim());
     });
+  });
+
+  document.querySelector('.outline-link[href="#profiles"]')?.addEventListener("click", (event) => {
+    event.preventDefault();
+    state.activeTab = "settings";
+    renderView();
+    const target = document.querySelector("#search:not([hidden])") || document.querySelector("#profiles");
+    requestAnimationFrame(() => scrollToViewSection(target, true));
   });
 
   els.childProfileList?.addEventListener("click", async (event) => {
@@ -336,8 +344,12 @@ function bindEvents() {
     button.addEventListener("click", () => {
       state.activeTab = button.dataset.view;
       renderView();
-      const target = state.activeTab === "all" ? els.todaySummaryCard : document.querySelector("#detailArea");
-      requestAnimationFrame(() => scrollToViewSection(target, true));
+      const targetMap = {
+        calendar: document.querySelector("#calendarArea"),
+        today: els.todaySummaryCard,
+        settings: document.querySelector("#search:not([hidden])") || document.querySelector("#profiles")
+      };
+      requestAnimationFrame(() => scrollToViewSection(targetMap[state.activeTab], true));
     });
   });
 
@@ -477,10 +489,11 @@ async function selectProfile(profileId) {
   closeProfileEditor(false);
   applyProfileToRuntime(profile);
   setSelectedDateToToday();
+  state.activeTab = "calendar";
   renderAll();
   await Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(profile.id)]);
   renderAll();
-  scrollToTodaySummary(true);
+  scrollToCalendarArea(true);
 }
 
 function openProfileEditor(mode, profileId = null, shouldScroll = true) {
@@ -494,6 +507,7 @@ function openProfileEditor(mode, profileId = null, shouldScroll = true) {
     : null;
   if (mode === "edit" && !profile) return;
 
+  state.activeTab = "settings";
   state.profileEditorMode = mode;
   state.editingProfileId = profile?.id || null;
   state.draftSchool = profile
@@ -606,11 +620,12 @@ async function saveProfileFromEditor() {
     state.draftSchool = null;
     applyProfileToRuntime(profile);
     setSelectedDateToToday();
+    state.activeTab = "calendar";
     renderAll();
     await Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(profile.id)]);
     renderAll();
     showCopyToast(wasEditing ? "자녀 정보를 수정했어요." : "자녀를 등록했어요.");
-    scrollToTodaySummary(true);
+    scrollToCalendarArea(true);
   } catch (error) {
     showCopyToast(error.message || "자녀 정보를 저장하지 못했어요.", true);
   }
@@ -992,7 +1007,7 @@ function getCurrentSchoolInfo() {
 function renderSchoolInfo() {
   if (!els.schoolInfoCard) return;
   const hasSchool = Boolean(state.selectedSchool);
-  els.schoolInfoCard.hidden = !hasSchool || state.activeTab !== "all";
+  els.schoolInfoCard.hidden = !hasSchool || state.activeTab !== "today";
   if (!hasSchool) return;
 
   const info = getCurrentSchoolInfo();
@@ -1450,13 +1465,8 @@ function renderView() {
   });
 
   els.viewSections.forEach((section) => {
-    const type = section.dataset.viewSection;
-    const shouldShow = state.activeTab === "all" || type !== "summary";
-    section.hidden = !shouldShow;
-  });
-
-  els.panels.forEach((panel) => {
-    panel.style.display = state.activeTab === "all" || panel.dataset.panel === state.activeTab ? "block" : "none";
+    const type = section.dataset.rootView || "";
+    section.classList.toggle("view-hidden", type && type !== state.activeTab);
   });
 
   document.body.dataset.activeView = state.activeTab;
