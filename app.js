@@ -961,8 +961,8 @@ function renderSelectedSchool() {
   if (!hasSchool) {
     els.topSchoolName.textContent = "우리아이 오늘";
     els.selectedKicker.textContent = "현재 선택한 자녀";
-    els.selectedSchoolName.textContent = "첫 자녀를 등록하면 생활 달력이 열려요.";
-    els.selectedSchoolMeta.textContent = "학교와 학년·반을 등록해 주세요.";
+    els.selectedSchoolName.textContent = "첫 자녀를 등록해 주세요.";
+    els.selectedSchoolMeta.textContent = "학교와 학년·반을 등록하면 아이의 학교생활을 한곳에서 확인할 수 있어요.";
     els.editProfileBtn.hidden = true;
     els.reloadTimetableBtn.hidden = true;
     els.shareSchoolBtn.hidden = true;
