@@ -46,7 +46,7 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  padding-bottom: 112px;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
 }
 
 button,
@@ -139,7 +139,8 @@ summary:focus-visible {
   gap: 4px;
 }
 
-.top-actions a {
+.top-actions a,
+.top-actions button {
   min-height: 36px;
   display: inline-flex;
   align-items: center;
@@ -153,7 +154,8 @@ summary:focus-visible {
   transition: background 0.16s ease, color 0.16s ease;
 }
 
-.top-actions a:hover {
+.top-actions a:hover,
+.top-actions button:hover {
   background: var(--surface-muted);
   color: var(--ink);
 }
@@ -560,7 +562,7 @@ body:not(.has-selected-school) .selected-action-row {
 .bottom-tab-bar {
   position: fixed;
   left: 50%;
-  bottom: 24px;
+  bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px));
   z-index: 40;
   width: min(680px, calc(100% - 32px));
   display: grid;
@@ -1641,7 +1643,7 @@ body:not(.has-selected-school) .selected-action-row {
 
   .bottom-tab-bar {
     width: min(640px, calc(100% - 24px));
-    bottom: 16px;
+    bottom: max(16px, calc(env(safe-area-inset-bottom) + 10px));
     gap: 8px;
     padding: 7px;
     border-radius: 22px;
@@ -2837,4 +2839,351 @@ summary:focus-visible,
   .school-info-footer-actions {
     flex-direction: column;
   }
+}
+
+
+/* ============================================================
+   v1.0.0 Release polish: privacy, help/share modals, mobile QA
+   ============================================================ */
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.privacy-inline-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 18px 0 2px;
+  padding: 13px 14px;
+  border: 1px solid #dbe7f6;
+  border-radius: 12px;
+  background: #f5f8fc;
+  color: #475467;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.privacy-inline-note strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--ink-strong);
+  font-size: 13px;
+}
+
+.privacy-inline-note p {
+  margin: 0;
+}
+
+.privacy-lock {
+  flex: 0 0 auto;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.privacy-settings-card {
+  padding: 22px 24px;
+}
+
+.privacy-settings-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.privacy-settings-head h2 {
+  margin: 3px 0 0;
+  color: var(--ink-strong);
+  font-size: 20px;
+  letter-spacing: -0.035em;
+}
+
+.privacy-settings-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--primary-soft);
+  font-size: 17px;
+}
+
+.privacy-settings-card > p {
+  max-width: 720px;
+  margin: 12px 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.privacy-delete-all {
+  min-height: 42px;
+}
+
+.app-modal[hidden] {
+  display: none !important;
+}
+
+.app-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.app-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.38);
+  backdrop-filter: blur(3px);
+}
+
+.app-modal-sheet {
+  position: relative;
+  z-index: 1;
+  width: min(620px, 100%);
+  max-height: min(82vh, 760px);
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(16, 24, 40, 0.2);
+  outline: none;
+}
+
+.app-modal-sheet.compact-modal {
+  width: min(480px, 100%);
+}
+
+.app-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.app-modal-head h2 {
+  margin: 4px 0 0;
+  color: var(--ink-strong);
+  font-size: 22px;
+  line-height: 1.3;
+  letter-spacing: -0.04em;
+}
+
+.modal-close-button {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 25px;
+  line-height: 1;
+}
+
+.modal-close-button:hover {
+  background: #e9edf2;
+  color: var(--ink);
+}
+
+.help-content {
+  display: grid;
+  gap: 0;
+  padding: 8px 0;
+}
+
+.help-content section {
+  padding: 13px 0;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.help-content section:last-child {
+  border-bottom: 0;
+}
+
+.help-content h3 {
+  margin: 0 0 5px;
+  color: var(--ink-strong);
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.help-content p,
+.share-notice-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.share-notice-copy {
+  display: grid;
+  gap: 8px;
+  padding: 22px 0 6px;
+}
+
+.share-notice-copy strong {
+  color: var(--ink-strong);
+}
+
+.app-modal-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 18px;
+}
+
+.help-modal-foot {
+  justify-content: space-between;
+}
+
+.modal-primary-button,
+.modal-secondary-button,
+.modal-secondary-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 15px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.modal-primary-button {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.modal-primary-button:hover {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+}
+
+.modal-secondary-button {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: #475467;
+}
+
+.modal-secondary-link {
+  min-height: 36px;
+  padding-left: 0;
+  color: var(--muted);
+}
+
+.error-state {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid #e5e8eb;
+  border-radius: 10px;
+  background: #f7f8fa;
+  color: #5f6b7a;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.calendar-status.error {
+  border-color: #e5e8eb;
+  background: #f7f8fa;
+  color: #5f6b7a;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding-bottom: calc(118px + env(safe-area-inset-bottom));
+  }
+
+  .app-shell {
+    padding-bottom: calc(122px + env(safe-area-inset-bottom));
+  }
+
+  .top-actions a,
+  .top-actions button,
+  .profile-add-button,
+  .ghost-button,
+  .profile-save-button,
+  .profile-delete-button,
+  .edit-profile-btn,
+  .reload-timetable-btn,
+  .share-button,
+  .copy-button,
+  .toolbar button,
+  .school-card button,
+  .quick-row button,
+  .school-info-toggle,
+  .school-info-refresh {
+    min-height: 44px;
+  }
+
+  .app-modal {
+    place-items: end center;
+    padding: 0;
+  }
+
+  .app-modal-sheet,
+  .app-modal-sheet.compact-modal {
+    width: 100%;
+    max-height: min(86dvh, 780px);
+    padding: 20px 18px calc(18px + env(safe-area-inset-bottom));
+    border-width: 1px 0 0;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .app-modal-head h2 {
+    font-size: 20px;
+  }
+
+  .app-modal-foot {
+    position: sticky;
+    bottom: calc(-18px - env(safe-area-inset-bottom));
+    margin: 0 -18px calc(-18px - env(safe-area-inset-bottom));
+    padding: 14px 18px calc(18px + env(safe-area-inset-bottom));
+    background: rgba(255,255,255,0.96);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+  }
+
+  .help-modal-foot {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .help-modal-foot .modal-primary-button,
+  .help-modal-foot .modal-secondary-link {
+    width: 100%;
+  }
+
+  .privacy-inline-note {
+    margin-top: 14px;
+    padding: 12px;
+  }
+
+  .privacy-settings-card {
+    padding: 18px;
+  }
+
+  .privacy-settings-head h2 {
+    font-size: 18px;
+  }
+}
+
+/* v1.0 text overflow safety */
+.selected-card h2,
+.school-card h3,
+.child-profile-button strong,
+.child-profile-button span,
+.school-info-summary h2 {
+  overflow-wrap: anywhere;
+  word-break: keep-all;
 }

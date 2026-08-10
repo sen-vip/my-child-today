@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#315B96" />
   <title>우리아이 오늘</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏫%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css" />
@@ -22,7 +23,7 @@
       </a>
       <nav class="top-actions" aria-label="상단 메뉴">
         <a class="outline-link" href="#profiles">자녀관리</a>
-        <a class="help-link" href="https://github.com/sen-vip/my-child-today#readme" target="_blank" rel="noopener noreferrer">도움말</a>
+        <button type="button" class="help-link" id="helpBtn">도움말</button>
       </nav>
     </div>
   </header>
@@ -62,8 +63,15 @@
             <h2 id="searchTitle">첫 자녀 등록</h2>
           </div>
           <div class="profile-editor-top-actions">
-            <button type="button" class="ghost-button danger-text" id="resetBtn">모든 자녀 삭제</button>
             <button type="button" class="ghost-button" id="cancelProfileEditBtn">취소</button>
+          </div>
+        </div>
+
+        <div class="privacy-inline-note" role="note">
+          <span class="privacy-lock" aria-hidden="true">🔒</span>
+          <div>
+            <strong>자녀 정보는 이 브라우저에만 저장돼요.</strong>
+            <p>회원가입 없이 사용하며, 자녀 이름 대신 <b>첫째</b>, <b>중학생</b> 같은 별칭을 사용해도 됩니다.</p>
           </div>
         </div>
 
@@ -83,7 +91,7 @@
               </label>
               <label class="search-field">
                 <span>학교명</span>
-                <input id="schoolKeyword" type="search" placeholder="예: 대청중, 서울학돌초" autocomplete="off" />
+                <input id="schoolKeyword" type="search" placeholder="예: 학돌중, 서울학돌초" autocomplete="off" />
               </label>
               <div class="search-field search-submit-field">
                 <span aria-hidden="true">검색</span>
@@ -124,6 +132,18 @@
             <button type="button" class="profile-save-button" id="saveProfileBtn">등록 완료</button>
           </div>
         </div>
+      </section>
+
+      <section class="card privacy-settings-card" id="privacySettingsCard" data-root-view="settings" aria-labelledby="privacySettingsTitle">
+        <div class="privacy-settings-head">
+          <div>
+            <span class="kicker">내 정보 저장</span>
+            <h2 id="privacySettingsTitle">이 브라우저에만 저장돼요</h2>
+          </div>
+          <span class="privacy-settings-icon" aria-hidden="true">🔒</span>
+        </div>
+        <p>우리아이 오늘은 별도 계정을 만들지 않습니다. 등록한 자녀 정보는 현재 브라우저에 저장되며, 브라우저나 사이트 데이터를 삭제하면 함께 삭제될 수 있어요.</p>
+        <button type="button" class="ghost-button danger-text privacy-delete-all" id="resetBtn">저장된 자녀 정보 모두 삭제</button>
       </section>
 
       <section class="selected-card" id="selectedCard">
@@ -273,7 +293,7 @@
           <button type="button" id="prevMonth" aria-label="이전 달">‹</button>
           <div>
             <span class="kicker">월별 학교생활</span>
-            <h2 id="monthTitle">2026년 6월</h2>
+            <h2 id="monthTitle">이번 달</h2>
           </div>
           <button type="button" id="nextMonth" aria-label="다음 달">›</button>
           <button type="button" id="todayBtn">오늘</button>
@@ -330,6 +350,74 @@
         <strong>sen-vip</strong>
       </footer>
     </main>
+  </div>
+
+  <div class="app-modal" id="helpModal" hidden role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+    <div class="app-modal-backdrop" data-modal-close="helpModal"></div>
+    <section class="app-modal-sheet" tabindex="-1">
+      <div class="app-modal-head">
+        <div>
+          <span class="kicker">도움말</span>
+          <h2 id="helpModalTitle">우리아이 오늘 사용법</h2>
+        </div>
+        <button type="button" class="modal-close-button" data-modal-close="helpModal" aria-label="도움말 닫기">×</button>
+      </div>
+      <div class="help-content">
+        <section>
+          <h3>우리아이 오늘은?</h3>
+          <p>학교의 급식·시간표·학사일정을 한곳에서 확인하는 학부모용 도구입니다.</p>
+        </section>
+        <section>
+          <h3>자녀 등록</h3>
+          <p>학교를 검색한 뒤 학년과 반을 선택해주세요. 자녀 이름 대신 <b>첫째</b>, <b>둘째</b>, <b>중학생</b>처럼 별칭을 사용해도 됩니다.</p>
+        </section>
+        <section>
+          <h3>달력</h3>
+          <p>학교 학사일정을 월별로 확인할 수 있습니다.</p>
+        </section>
+        <section>
+          <h3>오늘</h3>
+          <p>오늘의 시간표, 급식, 학사일정을 한 화면에서 확인할 수 있습니다.</p>
+        </section>
+        <section>
+          <h3>여러 자녀</h3>
+          <p>자녀를 추가해두면 설정 화면에서 빠르게 전환할 수 있습니다.</p>
+        </section>
+        <section>
+          <h3>정보 저장</h3>
+          <p>등록한 자녀 정보는 별도 회원가입 없이 현재 브라우저에 저장됩니다. 브라우저 데이터나 사이트 데이터를 삭제하면 등록 정보도 삭제될 수 있습니다.</p>
+        </section>
+        <section>
+          <h3>데이터 안내</h3>
+          <p>급식·시간표·학사일정은 NEIS 공개 데이터를 사용하며 학교의 입력 상황에 따라 실제 일정과 차이가 있을 수 있습니다.</p>
+        </section>
+      </div>
+      <div class="app-modal-foot help-modal-foot">
+        <a class="modal-secondary-link" href="https://github.com/sen-vip/my-child-today#readme" target="_blank" rel="noopener noreferrer">GitHub에서 자세히 보기</a>
+        <button type="button" class="modal-primary-button" data-modal-close="helpModal">확인</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="app-modal" id="shareNoticeModal" hidden role="dialog" aria-modal="true" aria-labelledby="shareNoticeTitle">
+    <div class="app-modal-backdrop" data-modal-close="shareNoticeModal"></div>
+    <section class="app-modal-sheet compact-modal" tabindex="-1">
+      <div class="app-modal-head">
+        <div>
+          <span class="kicker">공유 링크 안내</span>
+          <h2 id="shareNoticeTitle">공유 전에 확인해주세요</h2>
+        </div>
+        <button type="button" class="modal-close-button" data-modal-close="shareNoticeModal" aria-label="공유 안내 닫기">×</button>
+      </div>
+      <div class="share-notice-copy">
+        <p>공유 링크에는 <strong>선택한 학교와 학년·반 정보</strong>가 포함됩니다.</p>
+        <p>자녀 이름이나 별칭은 포함되지 않습니다.</p>
+      </div>
+      <div class="app-modal-foot">
+        <button type="button" class="modal-secondary-button" id="shareNoticeCancelBtn">취소</button>
+        <button type="button" class="modal-primary-button" id="shareNoticeConfirmBtn">공유하기</button>
+      </div>
+    </section>
   </div>
 
   <div class="copy-toast" id="copyToast" role="status" aria-live="polite"></div>
