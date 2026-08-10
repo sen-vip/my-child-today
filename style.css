@@ -3187,3 +3187,295 @@ body.modal-open {
   overflow-wrap: anywhere;
   word-break: keep-all;
 }
+
+/* =========================================================
+   v1.0.1 header centering + prettier help modal
+========================================================= */
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  justify-content: stretch;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar-side {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-side-left {
+  justify-content: flex-start;
+}
+
+.toolbar-side-right {
+  justify-content: flex-end;
+}
+
+.month-switcher {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  justify-self: center;
+}
+
+.month-switcher-copy {
+  min-width: clamp(180px, 22vw, 260px);
+  text-align: center;
+}
+
+.month-switcher-copy .kicker {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.month-switcher-copy h2 {
+  margin: 0;
+}
+
+.month-switcher button,
+.toolbar-side-right #todayBtn {
+  min-width: 56px;
+  height: 58px;
+  border: 1px solid #d7dde5;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+}
+
+.month-switcher button {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.toolbar-side-right #todayBtn {
+  min-width: 64px;
+  padding: 0 16px;
+  margin-left: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.help-modal-sheet {
+  max-width: 760px;
+}
+
+.help-modal-head {
+  align-items: flex-start;
+  padding-bottom: 18px;
+}
+
+.help-modal-subtitle {
+  margin: 10px 0 0;
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.help-content {
+  display: grid;
+  gap: 16px;
+  padding: 18px 0 10px;
+}
+
+.help-hero-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid #dbe6f4;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(49, 91, 150, 0.08), rgba(255, 255, 255, 0.96));
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+}
+
+.help-hero-icon,
+.help-card-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 18px;
+}
+
+.help-hero-icon {
+  width: 52px;
+  height: 52px;
+  background: rgba(49, 91, 150, 0.12);
+  font-size: 24px;
+}
+
+.help-hero-card h3,
+.help-card h3 {
+  margin: 0 0 6px;
+  color: var(--ink-strong);
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.help-hero-card p,
+.help-card p,
+.share-notice-copy p {
+  margin: 0;
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.help-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 18px 18px 17px;
+  border: 1px solid #e7ecf2;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.035);
+}
+
+.help-card-icon {
+  width: 42px;
+  height: 42px;
+  background: #f4f7fb;
+  color: var(--primary);
+  font-size: 21px;
+}
+
+.help-modal-foot {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.help-modal-foot .modal-secondary-link {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #e1e7ef;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #5f6b7a;
+}
+
+.help-modal-foot .modal-secondary-link:hover {
+  background: #f1f5f9;
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .toolbar {
+    gap: 12px;
+  }
+
+  .month-switcher {
+    gap: 10px;
+  }
+
+  .month-switcher-copy {
+    min-width: clamp(156px, 28vw, 220px);
+  }
+
+  .month-switcher button,
+  .toolbar-side-right #todayBtn {
+    height: 54px;
+    border-radius: 15px;
+  }
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px;
+    padding: 14px 14px;
+  }
+
+  .month-switcher {
+    gap: 8px;
+  }
+
+  .month-switcher-copy {
+    min-width: 138px;
+  }
+
+  .month-switcher-copy .kicker {
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+
+  .month-switcher-copy h2 {
+    font-size: 19px;
+    line-height: 1.15;
+  }
+
+  .month-switcher button,
+  .toolbar-side-right #todayBtn {
+    min-width: 40px;
+    height: 44px;
+    padding: 0 10px;
+    border-radius: 14px;
+  }
+
+  .month-switcher button {
+    font-size: 22px;
+  }
+
+  .toolbar-side-right #todayBtn {
+    min-width: 52px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .help-modal-sheet,
+  .help-modal-sheet.compact-modal {
+    width: 100%;
+    max-height: min(88dvh, 820px);
+  }
+
+  .help-content {
+    gap: 12px;
+    padding-top: 14px;
+  }
+
+  .help-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .help-hero-card,
+  .help-card {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .help-hero-icon {
+    width: 46px;
+    height: 46px;
+    font-size: 22px;
+  }
+
+  .help-card-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 19px;
+  }
+
+  .help-modal-foot {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .help-modal-foot .modal-primary-button,
+  .help-modal-foot .modal-secondary-link {
+    width: 100%;
+  }
+}
