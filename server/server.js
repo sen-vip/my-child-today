@@ -23,7 +23,6 @@ app.get("/api/schools", async (req, res) => {
       ATPT_OFCDC_SC_CODE: officeCode,
       SCHUL_NM: keyword.trim()
     });
-
     const schools = getRows(data, "schoolInfo").map((row) => ({
       schoolName: row.SCHUL_NM,
       region: row.ATPT_OFCDC_SC_NM,
@@ -54,7 +53,6 @@ app.get("/api/schedules", async (req, res) => {
       AA_FROM_YMD: startDate,
       AA_TO_YMD: endDate
     });
-
     const schedules = getRows(data, "SchoolSchedule").map((row) => ({
       schoolCode: row.SD_SCHUL_CODE,
       date: toDateKey(row.AA_YMD),
@@ -69,7 +67,6 @@ app.get("/api/schedules", async (req, res) => {
         six: row.SIX_GRADE_EVENT_YN
       }
     }));
-
     res.json({ schedules });
   } catch (error) {
     sendError(res, error);
@@ -83,7 +80,6 @@ app.get("/api/meals", async (req, res) => {
       ATPT_OFCDC_SC_CODE: officeCode,
       SD_SCHUL_CODE: schoolCode
     };
-
     if (date) {
       params.MLSV_YMD = date;
     } else if (year && month) {
@@ -91,7 +87,6 @@ app.get("/api/meals", async (req, res) => {
       params.MLSV_FROM_YMD = `${year}${monthNumber}01`;
       params.MLSV_TO_YMD = `${year}${monthNumber}${lastDayOfMonth(Number(year), Number(month))}`;
     }
-
     const data = await neisFetch("mealServiceDietInfo", params);
     const meals = getRows(data, "mealServiceDietInfo").map((row) => ({
       date: toDateKey(row.MLSV_YMD),
@@ -102,7 +97,6 @@ app.get("/api/meals", async (req, res) => {
       origin: cleanHtmlLine(row.ORPLC_INFO),
       allergy: "식단명 숫자는 알레르기 유발 식재료 번호입니다."
     }));
-
     if (date) return res.json({ meal: meals[0] || null });
     res.json({ meals });
   } catch (error) {
@@ -115,7 +109,6 @@ app.get("/api/timetable", async (req, res) => {
     const { officeCode, schoolCode, schoolType = "", year, semester, grade, className, classNm, date } = req.query;
     const endpoint = getTimetableEndpoint(schoolType);
     if (!endpoint) return res.status(400).json({ error: "현재 이 학교급의 시간표 조회는 지원 준비 중입니다." });
-
     const data = await neisFetch(endpoint, {
       ATPT_OFCDC_SC_CODE: officeCode,
       SD_SCHUL_CODE: schoolCode,
@@ -133,7 +126,6 @@ app.get("/api/timetable", async (req, res) => {
         date: toDateKey(row.ALL_TI_YMD)
       }))
       .sort((a, b) => Number(a.period) - Number(b.period));
-
     res.json({ timetable });
   } catch (error) {
     sendError(res, error);
@@ -148,7 +140,6 @@ async function neisFetch(endpoint, params) {
   url.searchParams.set("Type", "json");
   url.searchParams.set("pIndex", "1");
   url.searchParams.set("pSize", "100");
-
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && String(value).trim() !== "") {
       url.searchParams.set(key, String(value));

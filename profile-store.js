@@ -45,7 +45,6 @@
     if (!/^[a-z][a-z\d+.-]*:\/\//i.test(text)) {
       text = `https://${text}`;
     }
-
     try {
       const url = new URL(text);
       if (!["http:", "https:"].includes(url.protocol)) {
@@ -84,7 +83,6 @@
   function normalizeProfile(profile = {}, index = 0) {
     const school = normalizeSchool(profile.school || {});
     if (!profile.id || !isValidSchool(school)) return null;
-
     const now = new Date().toISOString();
     return {
       id: safeString(profile.id),
@@ -155,7 +153,6 @@
     const now = new Date().toISOString();
     const school = normalizeSchool(input.school || existingProfile?.school || {});
     if (!isValidSchool(school)) throw new Error("학교를 선택해 주세요.");
-
     const inputLinks = input.links || {};
     const homepageSource = Object.prototype.hasOwnProperty.call(inputLinks, "homepageUrl")
       ? inputLinks.homepageUrl
@@ -163,7 +160,6 @@
     const noticeSource = Object.prototype.hasOwnProperty.call(inputLinks, "noticeUrl")
       ? inputLinks.noticeUrl
       : existingProfile?.links?.noticeUrl;
-
     return {
       id: existingProfile?.id || createId(),
       nickname: safeString(input.nickname, existingProfile?.nickname || defaultNickname(index)),
@@ -218,7 +214,6 @@
 
     const profile = state.profiles[index];
     const nextLinks = { ...profile.links };
-
     if (Object.prototype.hasOwnProperty.call(links, "homepageUrl")) {
       nextLinks.homepageUrl = normalizeExternalUrl(links.homepageUrl, { allowEmpty: true });
     }
@@ -242,7 +237,6 @@
     const profile = state.profiles[index];
     const normalized = normalizeSchool({ ...profile.school, ...schoolInfo });
     const homepageUrl = normalizeStoredUrl(schoolInfo.homepageUrl || normalized.homepageUrl || profile.links?.homepageUrl);
-
     state.profiles[index] = {
       ...profile,
       school: {

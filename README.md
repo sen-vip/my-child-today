@@ -72,6 +72,12 @@ NEIS 공개 데이터
 - `profile-store.js` — 자녀 프로필 로컬 저장
 - `neis-cache.js` — NEIS 데이터 당일 캐시
 - `server/server.js` — NEIS 프록시
+- `favicon.svg`, `favicon.ico` — 브라우저 탭용 아이콘
+- `favicon-16x16.png`, `favicon-32x32.png` — 소형 파비콘
+- `apple-touch-icon.png` — iPhone/iPad 홈 화면·즐겨찾기 아이콘
+- `android-chrome-192x192.png`, `android-chrome-512x512.png` — Android/Chrome 홈 화면 아이콘
+- `android-chrome-maskable-512x512.png` — 마스커블 앱 아이콘
+- `site.webmanifest` — 홈 화면 설치용 앱 메타데이터
 
 ## v1.0.0 출시 마감
 
@@ -83,6 +89,8 @@ NEIS 공개 데이터
 - 초기 달력 테스트 날짜 제거
 - iPhone/Safari 하단 안전영역과 모달·터치 영역 보완
 - NEIS 당일 공통 캐시 구조 유지
+- 브라우저·iPhone·Android용 파비콘/앱 아이콘 세트 추가
+- `site.webmanifest` 연결 및 마스커블 아이콘 대응
 
 ---
 

@@ -4,8 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#315B96" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="우리아이 오늘" />
+  <meta name="application-name" content="우리아이 오늘" />
   <title>우리아이 오늘</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏫%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="shortcut icon" href="favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -27,14 +36,12 @@
       </nav>
     </div>
   </header>
-
   <div class="app-shell">
     <header class="hero" id="home">
       <span class="hero-eyebrow">우리 아이의 학교생활</span>
       <h1>우리 아이 학교생활, 한눈에</h1>
       <p>학사일정부터 오늘의 급식과 시간표까지 자녀별로 확인하세요.</p>
     </header>
-
     <main id="mainContent" tabindex="-1">
       <section class="card child-switcher-card" id="profiles" data-root-view="settings" aria-labelledby="profileListTitle">
         <div class="child-switcher-heading">
@@ -47,7 +54,6 @@
         <div id="childProfileList" class="child-profile-list" aria-live="polite"></div>
         <p id="profileLimitHint" class="profile-limit-hint">자녀는 최대 5명까지 이 기기에만 저장할 수 있어요.</p>
       </section>
-
       <section class="shared-view-banner" id="sharedViewBanner" hidden>
         <div>
           <strong>공유받은 학교를 임시로 보고 있어요.</strong>
@@ -55,7 +61,6 @@
         </div>
         <button type="button" id="exitSharedViewBtn">내 자녀로 돌아가기</button>
       </section>
-
       <section class="card search-card profile-editor-card" id="search" data-root-view="settings" hidden>
         <div class="card-heading">
           <div>
@@ -66,7 +71,6 @@
             <button type="button" class="ghost-button" id="cancelProfileEditBtn">취소</button>
           </div>
         </div>
-
         <div class="privacy-inline-note" role="note">
           <span class="privacy-lock" aria-hidden="true">🔒</span>
           <div>
@@ -74,13 +78,11 @@
             <p>회원가입 없이 사용하며, 자녀 이름 대신 <b>첫째</b>, <b>중학생</b> 같은 별칭을 사용해도 됩니다.</p>
           </div>
         </div>
-
         <label class="nickname-field">
           <span class="setting-label">자녀 별칭</span>
           <input id="nicknameInput" type="text" maxlength="20" placeholder="예: 첫째, 민준, 중학생" autocomplete="off" />
           <small>실명 대신 아이를 구분할 별칭만 입력해도 돼요.</small>
         </label>
-
         <div class="top-setting-grid">
           <div class="setting-panel school-setting-panel">
             <span class="setting-label">학교명 검색</span>
@@ -105,7 +107,6 @@
               <button type="button" data-keyword="고등학교">고등학교</button>
             </div>
           </div>
-
           <div class="setting-panel class-setting-panel">
             <span class="setting-label">학년·반 설정</span>
             <div class="timetable-controls top-timetable-controls">
@@ -121,10 +122,8 @@
             <p class="save-helper timetable-save-helper">등록 완료 후 이 자녀의 급식·시간표·학사일정에 적용돼요.</p>
           </div>
         </div>
-
         <div id="draftSchoolPreview" class="draft-school-preview" hidden></div>
         <div id="schoolResults" class="school-results" aria-live="polite"></div>
-
         <div class="profile-editor-actions">
           <button type="button" class="profile-delete-button" id="deleteProfileBtn" hidden>이 자녀 삭제</button>
           <div class="profile-editor-primary-actions">
@@ -133,7 +132,6 @@
           </div>
         </div>
       </section>
-
       <section class="card privacy-settings-card" id="privacySettingsCard" data-root-view="settings" aria-labelledby="privacySettingsTitle">
         <div class="privacy-settings-head">
           <div>
@@ -145,7 +143,6 @@
         <p>우리아이 오늘은 별도 계정을 만들지 않습니다. 등록한 자녀 정보는 현재 브라우저에 저장되며, 브라우저나 사이트 데이터를 삭제하면 함께 삭제될 수 있어요.</p>
         <button type="button" class="ghost-button danger-text privacy-delete-all" id="resetBtn">저장된 자녀 정보 모두 삭제</button>
       </section>
-
       <section class="selected-card" id="selectedCard">
         <div class="selected-icon" aria-hidden="true"></div>
         <div class="selected-content">
@@ -159,7 +156,6 @@
           </div>
         </div>
       </section>
-
       <nav class="bottom-tab-bar" role="tablist" aria-label="우리아이 오늘 주요 메뉴">
         <button type="button" class="bottom-tab-btn active" data-view="calendar" role="tab" aria-selected="true" aria-controls="calendarArea">
           <span class="bottom-tab-emoji" aria-hidden="true">🗓️</span>
@@ -174,7 +170,6 @@
           <span class="bottom-tab-label">설정</span>
         </button>
       </nav>
-
       <section class="card today-summary-card" id="todaySummaryCard" data-root-view="today" aria-live="polite">
         <div class="today-summary-head">
           <div>
@@ -201,7 +196,6 @@
           </article>
         </div>
       </section>
-
       <section class="card tomorrow-preview-card" id="tomorrowPreviewCard" data-root-view="today" aria-live="polite">
         <div class="tomorrow-preview-head">
           <div>
@@ -221,7 +215,6 @@
           </article>
         </div>
       </section>
-
       <section class="card school-info-card" id="schoolInfoCard" data-root-view="today" hidden aria-labelledby="schoolInfoTitle">
         <div class="school-info-heading">
           <div class="school-info-summary">
@@ -287,7 +280,6 @@
           </div>
         </div>
       </section>
-
       <section class="card tools-card" id="calendarArea" data-root-view="calendar">
         <div class="toolbar">
           <button type="button" id="prevMonth" aria-label="이전 달">‹</button>
@@ -298,11 +290,8 @@
           <button type="button" id="nextMonth" aria-label="다음 달">›</button>
           <button type="button" id="todayBtn">오늘</button>
         </div>
-
-
         <div class="calendar" id="calendar" aria-label="월별 학교 생활 달력"></div>
       </section>
-
       <section class="card selected-detail-card" id="detailArea" data-root-view="calendar">
         <div class="selected-detail-head" id="selectedCopyStrip">
           <div>
@@ -315,11 +304,9 @@
             <button type="button" class="copy-button ghost-copy share-selected-button" id="shareSelectedBtn">이 날짜 공유</button>
           </div>
         </div>
-
         <div class="detail-section-label" aria-hidden="true">
           <span>이 날짜의 학사일정 · 급식 · 시간표</span>
         </div>
-
         <div class="detail-grid">
           <article class="detail-card schedule-detail" data-panel="schedule">
             <div class="detail-title schedule-title">
@@ -327,14 +314,12 @@
             </div>
             <div id="scheduleDetail" class="detail-body">학교와 날짜를 선택해 주세요.</div>
           </article>
-
           <article class="detail-card meal-detail" data-panel="meal">
             <div class="detail-title meal-title">
               <h2><span class="title-emoji" aria-hidden="true">🍱</span><span>급식</span></h2>
             </div>
             <div id="mealDetail" class="detail-body">학교와 날짜를 선택해 주세요.</div>
           </article>
-
           <article class="detail-card timetable-detail" data-panel="timetable">
             <div class="detail-title timetable-title">
               <h2><span class="title-emoji" aria-hidden="true">🕘</span><span>시간표</span></h2>
@@ -343,15 +328,12 @@
           </article>
         </div>
       </section>
-
-
       <footer class="app-footer">
         <span>제작</span>
         <strong>sen-vip</strong>
       </footer>
     </main>
   </div>
-
   <div class="app-modal" id="helpModal" hidden role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
     <div class="app-modal-backdrop" data-modal-close="helpModal"></div>
     <section class="app-modal-sheet" tabindex="-1">
@@ -398,7 +380,6 @@
       </div>
     </section>
   </div>
-
   <div class="app-modal" id="shareNoticeModal" hidden role="dialog" aria-modal="true" aria-labelledby="shareNoticeTitle">
     <div class="app-modal-backdrop" data-modal-close="shareNoticeModal"></div>
     <section class="app-modal-sheet compact-modal" tabindex="-1">
@@ -419,7 +400,6 @@
       </div>
     </section>
   </div>
-
   <div class="copy-toast" id="copyToast" role="status" aria-live="polite"></div>
   <script src="profile-store.js"></script>
   <script src="neis-cache.js"></script>
