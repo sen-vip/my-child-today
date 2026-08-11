@@ -1,5 +1,5 @@
 // ============================================================
-// 우리아이 오늘 v1.0.0 Release
+// 우리아이 오늘 v1.0.2 Progressive Loading UX
 // 출시 전 신뢰성·개인정보 안내·도움말·NEIS 오류 상태 마감
 // ============================================================
 
@@ -151,9 +151,69 @@ const els = {
   classInput: document.querySelector("#classInput"),
   semesterInput: document.querySelector("#semesterInput"),
   reloadTimetableBtn: document.querySelector("#reloadTimetableBtn"),
+  dataLoadingBar: document.querySelector("#dataLoadingBar"),
+  dataLoadingTitle: document.querySelector("#dataLoadingTitle"),
+  dataLoadingDetail: document.querySelector("#dataLoadingDetail"),
   viewTabs: document.querySelectorAll("[data-view]"),
   viewSections: document.querySelectorAll("[data-root-view]")
 };
+
+let dataLoadingSequence = 0;
+let dataLoadingShowTimer = null;
+let dataLoadingSlowTimer = null;
+let dataLoadingHideTimer = null;
+
+function startDataLoading(
+  title = "학교생활 정보를 불러오는 중이에요",
+  detail = "급식 · 학사일정 · 시간표를 확인하고 있어요."
+) {
+  const token = ++dataLoadingSequence;
+  window.clearTimeout(dataLoadingShowTimer);
+  window.clearTimeout(dataLoadingSlowTimer);
+  window.clearTimeout(dataLoadingHideTimer);
+
+  if (!els.dataLoadingBar) return token;
+  els.dataLoadingTitle.textContent = title;
+  els.dataLoadingDetail.textContent = detail;
+
+  const show = () => {
+    if (token !== dataLoadingSequence || !els.dataLoadingBar) return;
+    els.dataLoadingBar.hidden = false;
+    requestAnimationFrame(() => els.dataLoadingBar?.classList.add("is-visible"));
+  };
+
+  if (!els.dataLoadingBar.hidden) {
+    els.dataLoadingBar.classList.add("is-visible");
+  } else {
+    dataLoadingShowTimer = window.setTimeout(show, 350);
+  }
+
+  dataLoadingSlowTimer = window.setTimeout(() => {
+    if (token !== dataLoadingSequence || !els.dataLoadingBar) return;
+    show();
+    els.dataLoadingTitle.textContent = "정보를 확인하고 있어요";
+    els.dataLoadingDetail.textContent = "처음 연결할 때는 조금 더 걸릴 수 있어요.";
+  }, 4000);
+
+  return token;
+}
+
+function updateDataLoading(token, title, detail) {
+  if (token !== dataLoadingSequence || !els.dataLoadingBar) return;
+  if (title) els.dataLoadingTitle.textContent = title;
+  if (detail) els.dataLoadingDetail.textContent = detail;
+}
+
+function finishDataLoading(token) {
+  if (token !== dataLoadingSequence) return;
+  window.clearTimeout(dataLoadingShowTimer);
+  window.clearTimeout(dataLoadingSlowTimer);
+  if (!els.dataLoadingBar || els.dataLoadingBar.hidden) return;
+  els.dataLoadingBar.classList.remove("is-visible");
+  dataLoadingHideTimer = window.setTimeout(() => {
+    if (token === dataLoadingSequence && els.dataLoadingBar) els.dataLoadingBar.hidden = true;
+  }, 180);
+}
 
 function init() {
   renderOfficeOptions();
@@ -164,22 +224,32 @@ function init() {
 
   if (sharedState.school) {
     activateSharedView(sharedState);
-    Promise.allSettled([loadMonthData(), enrichSharedSchoolInfo()]).then(() => {
-      state.activeTab = "calendar";
+    state.activeTab = "calendar";
+    renderAll();
+    loadMonthData().then(() => {
       renderAll();
       requestAnimationFrame(() => scrollToCalendarArea(false));
     });
+    void enrichSharedSchoolInfo().then(() => {
+      renderSelectedSchool();
+      renderSchoolInfo();
+    }).catch(() => {});
     return;
   }
 
   const activeProfile = getActiveProfile();
   if (activeProfile) {
     applyProfileToRuntime(activeProfile);
-    Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(activeProfile.id)]).then(() => {
-      state.activeTab = "calendar";
+    state.activeTab = "calendar";
+    renderAll();
+    loadMonthData().then(() => {
       renderAll();
       requestAnimationFrame(() => scrollToCalendarArea(false));
     });
+    void enrichProfileSchoolInfo(activeProfile.id).then(() => {
+      renderSelectedSchool();
+      renderSchoolInfo();
+    }).catch(() => {});
   } else {
     state.activeTab = "settings";
     openProfileEditor("add", null, false);
@@ -828,11 +898,16 @@ function getTimetableApiName(school) {
 async function loadMonthData() {
   if (!state.selectedSchool) return;
 
+  const loadingToken = startDataLoading();
   const contextVersion = state.contextVersion;
   const school = { ...state.selectedSchool };
   const currentDate = new Date(state.currentDate);
   const monthPrefix = `${currentDate.getFullYear()}-${pad(currentDate.getMonth() + 1)}`;
 
+  state.schedules = [];
+  state.meals = [];
+  state.mealsByDate = {};
+  state.meal = null;
   state.scheduleStatus = "loading";
   state.scheduleMessage = "학사일정을 불러오는 중입니다.";
   state.mealStatus = "loading";
@@ -842,44 +917,84 @@ async function loadMonthData() {
   renderCalendar();
   renderScheduleDetail();
   renderMealDetail();
+  renderTodaySummary();
+  renderTomorrowPreview();
 
-  const [scheduleResult, mealResult] = await Promise.allSettled([
-    fetchSchedules(school, currentDate),
-    fetchMeals(school, currentDate)
-  ]);
+  const scheduleTask = (async () => {
+    try {
+      const schedules = await fetchSchedules(school, currentDate);
+      if (!isCurrentContext(contextVersion, school, monthPrefix)) return;
+      state.schedules = schedules;
+      state.scheduleStatus = cacheMeta.schedules ? "stale" : "success";
+      state.scheduleMessage = cacheMeta.schedules
+        ? "최신 조회에 실패해 이전에 저장된 학사일정을 보여드려요."
+        : state.schedules.length ? "" : "이 달에 등록된 학사일정이 없어요.";
+    } catch (error) {
+      if (!isCurrentContext(contextVersion, school, monthPrefix)) return;
+      state.schedules = [];
+      state.scheduleStatus = "error";
+      state.scheduleMessage = "학사일정 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.";
+    } finally {
+      if (isCurrentContext(contextVersion, school, monthPrefix)) {
+        updateTodaySnapshot();
+        renderCalendar();
+        renderScheduleDetail();
+        renderTodaySummary();
+      }
+    }
+  })();
 
-  if (!isCurrentContext(contextVersion, school, monthPrefix)) return;
+  const mealTask = (async () => {
+    try {
+      const meals = await fetchMeals(school, currentDate);
+      if (!isCurrentContext(contextVersion, school, monthPrefix)) return;
+      state.meals = meals;
+      state.mealsByDate = Object.fromEntries(state.meals.map((meal) => [meal.date, meal]));
+      state.mealStatus = cacheMeta.meals ? "stale" : "success";
+      state.mealMessage = cacheMeta.meals
+        ? "최신 조회에 실패해 이전에 저장된 급식정보를 보여드려요."
+        : state.meals.length ? "" : "이 달에 등록된 급식 정보가 없어요.";
+    } catch (error) {
+      if (!isCurrentContext(contextVersion, school, monthPrefix)) return;
+      state.meals = [];
+      state.mealsByDate = {};
+      state.mealStatus = "error";
+      state.mealMessage = "급식 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.";
+    } finally {
+      if (isCurrentContext(contextVersion, school, monthPrefix)) {
+        state.meal = state.mealsByDate[state.selectedDate] || null;
+        updateTodaySnapshot();
+        renderCalendar();
+        renderMealDetail();
+        renderTodaySummary();
+      }
+    }
+  })();
 
-  if (scheduleResult.status === "fulfilled") {
-    state.schedules = scheduleResult.value;
-    state.scheduleStatus = cacheMeta.schedules ? "stale" : "success";
-    state.scheduleMessage = cacheMeta.schedules
-      ? "최신 조회에 실패해 이전에 저장된 학사일정을 보여드려요."
-      : state.schedules.length ? "" : "이 달에 등록된 학사일정이 없어요.";
-  } else {
-    state.schedules = [];
-    state.scheduleStatus = "error";
-    state.scheduleMessage = "학사일정 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.";
+  await Promise.allSettled([scheduleTask, mealTask]);
+  if (!isCurrentContext(contextVersion, school, monthPrefix)) {
+    finishDataLoading(loadingToken);
+    return;
   }
 
-  if (mealResult.status === "fulfilled") {
-    state.meals = mealResult.value;
-    state.mealsByDate = Object.fromEntries(state.meals.map((meal) => [meal.date, meal]));
-    state.mealStatus = cacheMeta.meals ? "stale" : "success";
-    state.mealMessage = cacheMeta.meals
-      ? "최신 조회에 실패해 이전에 저장된 급식정보를 보여드려요."
-      : state.meals.length ? "" : "이 달에 등록된 급식 정보가 없어요.";
-  } else {
-    state.meals = [];
-    state.mealsByDate = {};
-    state.mealStatus = "error";
-    state.mealMessage = "급식 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.";
-  }
-
+  state.meal = state.mealsByDate[state.selectedDate] || null;
+  state.classSwitcherOpen = false;
+  restoreTimetableFromCache();
   updateTodaySnapshot();
-  await Promise.allSettled([loadTomorrowPreview(contextVersion, school), loadDayData(contextVersion)]);
-}
+  updateDataLoading(loadingToken, "거의 다 불러왔어요", "오늘 시간표를 확인하고 있어요.");
 
+  // 내일 정보는 첫 화면 표시를 막지 않고 뒤에서 갱신합니다.
+  void loadTomorrowPreview(contextVersion, school).finally(() => {
+    if (isCurrentContext(contextVersion, school)) renderTomorrowPreview();
+  });
+
+  await loadTimetable(contextVersion);
+  if (isCurrentContext(contextVersion, school, monthPrefix)) {
+    renderTimetableDetail();
+    renderTodaySummary();
+  }
+  finishDataLoading(loadingToken);
+}
 function isCurrentContext(contextVersion, school, monthPrefix = "") {
   if (contextVersion !== state.contextVersion) return false;
   if (!state.selectedSchool || state.selectedSchool.schoolCode !== school.schoolCode) return false;
