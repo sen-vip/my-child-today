@@ -3563,3 +3563,212 @@ body.modal-open {
   .data-loading-copy strong { font-size: 13px; }
   .data-loading-copy span { font-size: 12px; }
 }
+
+/* =========================================================
+   v1.0.3 mobile calendar information UX
+   - desktop month switcher stays centered
+   - mobile month switcher becomes left-aligned
+   - mobile calendar shows one representative school schedule
+========================================================= */
+.mobile-day-info {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 14px;
+  }
+
+  .toolbar-side-left {
+    display: none;
+  }
+
+  .month-switcher {
+    justify-self: start;
+    justify-content: flex-start;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .month-switcher-copy {
+    order: 1;
+    min-width: 0;
+    margin-right: 2px;
+    text-align: left;
+  }
+
+  .month-switcher-copy .kicker {
+    margin-bottom: 3px;
+    font-size: 10px;
+  }
+
+  .month-switcher-copy h2 {
+    font-size: 20px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .month-switcher #prevMonth {
+    order: 2;
+  }
+
+  .month-switcher #nextMonth {
+    order: 3;
+  }
+
+  .month-switcher button {
+    min-width: 36px;
+    width: 36px;
+    height: 40px;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 20px;
+  }
+
+  .toolbar-side-right {
+    justify-self: end;
+  }
+
+  .toolbar-side-right #todayBtn {
+    min-width: 50px;
+    width: auto;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .day-cell {
+    min-height: 64px;
+    align-items: stretch;
+    padding: 5px 2px 4px;
+  }
+
+  .day-number {
+    margin: 0 auto;
+  }
+
+  .day-markers {
+    display: none;
+  }
+
+  .mobile-day-info {
+    width: 100%;
+    min-width: 0;
+    min-height: 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 2px;
+    margin-top: 2px;
+    overflow: hidden;
+  }
+
+  .mobile-schedule-text {
+    width: calc(100% - 2px);
+    max-width: 100%;
+    display: block;
+    padding: 2px 2px;
+    border-radius: 4px;
+    overflow: hidden;
+    color: #5146a8;
+    background: var(--schedule-soft);
+    font-size: 8.5px;
+    line-height: 1.25;
+    font-weight: 750;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-schedule-text b {
+    font-size: 8px;
+    font-weight: 800;
+  }
+
+  .mobile-schedule-text.holiday {
+    color: var(--holiday);
+    background: var(--holiday-soft);
+  }
+
+  .mobile-data-dots {
+    min-height: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .mobile-data-dot {
+    width: 4px;
+    height: 4px;
+    display: block;
+    border-radius: 50%;
+  }
+
+  .mobile-data-dot.meal {
+    background: #d7a064;
+  }
+
+  .mobile-data-dot.timetable {
+    background: #6eaa92;
+  }
+
+  .day-cell.muted .mobile-day-info {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .toolbar {
+    gap: 7px;
+    padding-inline: 10px;
+  }
+
+  .month-switcher {
+    gap: 4px;
+  }
+
+  .month-switcher-copy h2 {
+    font-size: 18px;
+  }
+
+  .month-switcher button {
+    min-width: 32px;
+    width: 32px;
+    height: 38px;
+  }
+
+  .toolbar-side-right #todayBtn {
+    min-width: 46px;
+    height: 38px;
+    padding-inline: 10px;
+  }
+
+  .mobile-schedule-text {
+    font-size: 8px;
+  }
+}
+@media (max-width: 640px) {
+  .mobile-schedule-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+  }
+
+  .mobile-schedule-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-schedule-text b {
+    flex: 0 0 auto;
+  }
+}
