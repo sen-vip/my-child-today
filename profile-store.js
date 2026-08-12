@@ -99,7 +99,6 @@
       },
       grade: normalizeNumber(profile.grade, 1, 6),
       className: normalizeNumber(profile.className, 1, 30),
-      semester: ["1", "2"].includes(String(profile.semester)) ? String(profile.semester) : "1",
       links: {
         homepageUrl: normalizeStoredUrl(profile.links?.homepageUrl || school.homepageUrl),
         noticeUrl: normalizeStoredUrl(profile.links?.noticeUrl)
@@ -175,7 +174,6 @@
       },
       grade: normalizeNumber(input.grade, 1, 6),
       className: normalizeNumber(input.className, 1, 30),
-      semester: ["1", "2"].includes(String(input.semester)) ? String(input.semester) : "1",
       links: {
         homepageUrl: normalizeStoredUrl(homepageSource),
         noticeUrl: normalizeStoredUrl(noticeSource)

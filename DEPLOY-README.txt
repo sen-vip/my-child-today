@@ -1,9 +1,11 @@
-우리아이 오늘 v1.0.4 배포 안내
+우리아이 오늘 v1.0.5 배포 안내
 
 이 ZIP은 GitHub 저장소 루트에 그대로 덮어쓰기 위한 파일입니다.
-특히 index.html, app.js, style.css 3개 파일이 모두 교체되어야 모바일 달력 개선이 적용됩니다.
+index.html, app.js, profile-store.js, style.css를 함께 교체해야 학기 설정 제거와 자동 조회가 정상 적용됩니다.
 
 확인 포인트:
-- index.html: style.css?v=1.0.4 / app.js?v=1.0.4
-- app.js: renderMobileDayInfo 함수 존재
-- style.css: .mobile-day-info 규칙 존재
+- index.html: style.css?v=1.0.5 / app.js?v=1.0.5
+- 자녀 등록·수정 화면에 학기 선택 항목이 없음
+- 날짜를 선택하면 1·2학기 중 실제 수업 데이터가 있는 시간표가 자동 표시됨
+- 1~2월 시간표는 전년도 학사연도로 조회됨
+- 여름방학·겨울방학·휴업일이 교시별로 반복 표시되지 않음

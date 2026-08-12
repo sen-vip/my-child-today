@@ -1,6 +1,6 @@
 // ============================================================
-// 우리아이 오늘 v1.0.4 Mobile Calendar Deploy Fix
-// 출시 전 신뢰성·개인정보 안내·도움말·NEIS 오류 상태 마감
+// 우리아이 오늘 v1.0.5 Semester Auto Lookup
+// 날짜 기준 학기 자동 조회·학사연도 보정·방학 시간표 반복 표시 제거
 // ============================================================
 
 const API_CONFIG = {
@@ -69,6 +69,7 @@ const state = {
   timetableStatus: "idle",
   timetableMessage: "",
   timetableNotice: "",
+  timetableDayLabel: "",
   schools: [],
   classSwitcherOpen: false,
   timetableAutoTimer: null,
@@ -149,7 +150,6 @@ const els = {
   timetableDetail: document.querySelector("#timetableDetail"),
   gradeInput: document.querySelector("#gradeInput"),
   classInput: document.querySelector("#classInput"),
-  semesterInput: document.querySelector("#semesterInput"),
   reloadTimetableBtn: document.querySelector("#reloadTimetableBtn"),
   dataLoadingBar: document.querySelector("#dataLoadingBar"),
   dataLoadingTitle: document.querySelector("#dataLoadingTitle"),
@@ -471,16 +471,14 @@ function getCurrentClassSettings() {
   if (state.sharedView) {
     return {
       grade: state.sharedView.grade || "1",
-      className: state.sharedView.className || "1",
-      semester: state.sharedView.semester || "1"
+      className: state.sharedView.className || "1"
     };
   }
 
   const profile = getActiveProfile();
   return {
     grade: profile?.grade || "1",
-    className: profile?.className || "1",
-    semester: profile?.semester || "1"
+    className: profile?.className || "1"
   };
 }
 
@@ -495,7 +493,6 @@ function applyProfileToRuntime(profile) {
   });
   els.gradeInput.value = profile.grade || "1";
   els.classInput.value = profile.className || "1";
-  els.semesterInput.value = profile.semester || "1";
   clearRuntimeData(false);
 }
 
@@ -503,14 +500,12 @@ function activateSharedView(sharedState) {
   state.contextVersion += 1;
   state.sharedView = {
     grade: sharedState.grade || "1",
-    className: sharedState.className || "1",
-    semester: sharedState.semester || "1"
+    className: sharedState.className || "1"
   };
   state.selectedSchool = normalizeSchool(sharedState.school);
   state.sharedHomepageUrl = state.selectedSchool.homepageUrl || "";
   els.gradeInput.value = state.sharedView.grade;
   els.classInput.value = state.sharedView.className;
-  els.semesterInput.value = state.sharedView.semester;
   clearRuntimeData(false);
 }
 
@@ -551,6 +546,7 @@ function clearRuntimeData(clearSchool = true) {
   state.timetableStatus = "idle";
   state.timetableMessage = "";
   state.timetableNotice = "";
+  state.timetableDayLabel = "";
   state.schools = [];
   state.classSwitcherOpen = false;
   if (clearSchool) state.sharedHomepageUrl = "";
@@ -593,7 +589,6 @@ function openProfileEditor(mode, profileId = null, shouldScroll = true) {
   els.nicknameInput.value = profile?.nickname || ProfileStore.suggestNickname(state.profileState);
   els.gradeInput.value = profile?.grade || "1";
   els.classInput.value = profile?.className || "1";
-  els.semesterInput.value = profile?.semester || getTodaySemester(state.selectedDate);
   els.officeCode.value = profile?.school?.officeCode || "";
   els.schoolKeyword.value = "";
   els.schoolResults.innerHTML = "";
@@ -658,7 +653,6 @@ async function saveProfileFromEditor() {
   const nickname = els.nicknameInput.value.trim() || ProfileStore.suggestNickname(state.profileState);
   const grade = normalizeNumberParam(els.gradeInput.value, 1, 6);
   const className = normalizeNumberParam(els.classInput.value, 1, 30);
-  const semester = ["1", "2"].includes(els.semesterInput.value) ? els.semesterInput.value : "1";
 
   if (!state.draftSchool) {
     showCopyToast("학교를 검색한 뒤 ‘이 학교 선택’을 눌러 주세요.", true);
@@ -680,7 +674,6 @@ async function saveProfileFromEditor() {
       school: state.draftSchool,
       grade,
       className,
-      semester,
       links: {
         homepageUrl: state.draftSchool.homepageUrl || (!schoolChanged ? existingProfile?.links?.homepageUrl || "" : ""),
         noticeUrl: schoolChanged ? "" : existingProfile?.links?.noticeUrl || ""
@@ -756,8 +749,7 @@ function getNeisContext(school = state.selectedSchool, settings = getCurrentClas
     officeCode: school?.officeCode || "",
     schoolName: school?.schoolName || "",
     grade: settings?.grade || "1",
-    className: settings?.className || "1",
-    semester: settings?.semester || "1"
+    className: settings?.className || "1"
   };
 }
 
@@ -861,30 +853,52 @@ async function fetchTimetable(
     context.schoolCode,
     context.grade,
     context.className,
-    context.semester,
+    "auto",
     dateKey
   );
 
   const result = await NeisCache.getOrFetch(cacheKey, async () => {
-    const params = new URLSearchParams({
-      officeCode: context.officeCode,
-      schoolCode: context.schoolCode,
-      schoolType: school.schoolType || school.schoolName || "",
-      year: String(new Date(`${dateKey}T00:00:00`).getFullYear()),
-      semester: context.semester,
-      grade: context.grade,
-      className: context.className,
-      classNm: context.className,
-      date: compactDate(dateKey)
+    const requests = getSemesterCandidates(dateKey).map(async (semester) => {
+      const params = new URLSearchParams({
+        officeCode: context.officeCode,
+        schoolCode: context.schoolCode,
+        schoolType: school.schoolType || school.schoolName || "",
+        year: String(getAcademicYear(dateKey)),
+        semester,
+        grade: context.grade,
+        className: context.className,
+        classNm: context.className,
+        date: compactDate(dateKey)
+      });
+      const response = await fetch(`${API_CONFIG.baseUrl}/api/timetable?${params.toString()}`);
+      if (!response.ok) throw new Error("시간표 조회 실패");
+      const data = await response.json();
+      const rawItems = (data.timetable || [])
+        .map(normalizeTimetable)
+        .sort((a, b) => Number(a.period) - Number(b.period));
+      return {
+        rawItems,
+        items: rawItems.filter((item) => !isNonInstructionTimetableItem(item))
+      };
     });
-    const response = await fetch(`${API_CONFIG.baseUrl}/api/timetable?${params.toString()}`);
-    if (!response.ok) throw new Error("시간표 조회 실패");
-    const data = await response.json();
-    return (data.timetable || []).map(normalizeTimetable).sort((a, b) => Number(a.period) - Number(b.period));
+
+    const settled = await Promise.allSettled(requests);
+    const successful = settled
+      .filter((entry) => entry.status === "fulfilled")
+      .map((entry) => entry.value);
+    if (!successful.length) throw new Error("시간표 조회 실패");
+
+    const selected = successful.find((entry) => entry.items.length)
+      || successful.find((entry) => entry.rawItems.length)
+      || successful[0];
+    return {
+      items: selected.items,
+      dayLabel: getNonInstructionTimetableLabel(selected.rawItems)
+    };
   }, { forceRefresh });
 
   cacheMeta.timetable = result.stale;
-  return Array.isArray(result.data) ? result.data : [];
+  return normalizeTimetableCacheEntry(result.data);
 }
 
 function getTimetableApiName(school) {
@@ -1055,14 +1069,15 @@ async function loadTimetable(existingContextVersion = state.contextVersion, { fo
   renderTimetableDetail();
 
   try {
-    const timetable = await fetchTimetable(school, dateKey, settings, { forceRefresh });
+    const timetableResult = await fetchTimetable(school, dateKey, settings, { forceRefresh });
     if (!isCurrentTimetableContext(contextVersion, school, dateKey, settings)) return;
 
-    state.timetable = timetable;
+    state.timetable = timetableResult.items;
+    state.timetableDayLabel = timetableResult.dayLabel;
     state.timetableStatus = "success";
     state.timetableMessage = state.timetable.length
       ? ""
-      : "등록된 시간표가 없어요.";
+      : getTimetableEmptyMessage(dateKey, state.timetableDayLabel);
 
     state.timetableNotice = cacheMeta.timetable
       ? "최신 조회에 실패해 이전에 저장된 시간표를 보여드려요."
@@ -1074,6 +1089,7 @@ async function loadTimetable(existingContextVersion = state.contextVersion, { fo
   } catch (error) {
     if (!isCurrentTimetableContext(contextVersion, school, dateKey, settings)) return;
     state.timetable = [];
+    state.timetableDayLabel = "";
     state.timetableStatus = "error";
     state.timetableMessage = "시간표 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.";
   }
@@ -1085,8 +1101,7 @@ function isCurrentTimetableContext(contextVersion, school, dateKey, settings) {
   if (state.selectedDate !== dateKey) return false;
   const current = getCurrentClassSettings();
   return current.grade === settings.grade
-    && current.className === settings.className
-    && current.semester === settings.semester;
+    && current.className === settings.className;
 }
 
 function renderAll() {
@@ -1155,13 +1170,13 @@ function renderSelectedSchool() {
     els.topSchoolName.textContent = `공유 · ${getCompactSchoolName(state.selectedSchool.schoolName)}`;
     els.selectedKicker.textContent = "공유받은 학교";
     els.selectedSchoolName.textContent = state.selectedSchool.schoolName;
-    els.selectedSchoolMeta.textContent = `${settings.grade}학년 ${settings.className}반 · ${settings.semester}학기 · 임시 보기`;
+    els.selectedSchoolMeta.textContent = `${settings.grade}학년 ${settings.className}반 · 임시 보기`;
     els.editProfileBtn.hidden = true;
   } else {
     els.topSchoolName.textContent = `${profile?.nickname || "우리 아이"} · ${getCompactSchoolName(state.selectedSchool.schoolName)}`;
     els.selectedKicker.textContent = "현재 선택한 자녀";
     els.selectedSchoolName.textContent = profile?.nickname || "우리 아이";
-    els.selectedSchoolMeta.textContent = `${state.selectedSchool.schoolName} · ${settings.grade}학년 ${settings.className}반 · ${settings.semester}학기`;
+    els.selectedSchoolMeta.textContent = `${state.selectedSchool.schoolName} · ${settings.grade}학년 ${settings.className}반`;
     els.editProfileBtn.hidden = !profile;
   }
 
@@ -1517,18 +1532,19 @@ function renderTodaySummary() {
   const settings = getCurrentClassSettings();
   const todayGrade = settings.grade;
   const todayClassName = settings.className;
-  const todaySemester = settings.semester || getTodaySemester(todayKey);
   const todayTimetableTitle = document.querySelector("#todayTimetableTitle");
   if (todayTimetableTitle) {
     const badge = ` <span class="title-badge class-badge">${escapeHtml(todayGrade)}-${escapeHtml(todayClassName)}</span>`;
     todayTimetableTitle.innerHTML = buildSummaryTitle("시간표", "🕘", badge);
   }
 
-  const todayTimetable = getTimetableCacheWithOptions(todayKey, todayGrade, todayClassName, todaySemester);
+  const todayTimetable = getTimetableCacheWithOptions(todayKey, todayGrade, todayClassName);
   if (todayTimetable.length) {
     els.todayTimetableSummary.innerHTML = `<ol class="today-timetable-list">${todayTimetable.slice(0, 7).map((item) => `<li><b>${escapeHtml(item.period)}교시</b> ${escapeHtml(item.subject || "-")}</li>`).join("")}</ol>${todayTimetable.length > 7 ? `<p class="today-more">외 ${todayTimetable.length - 7}교시</p>` : ""}`;
   } else if (state.selectedDate === todayKey && state.timetableStatus === "error") {
     els.todayTimetableSummary.innerHTML = `<p class="error-state">시간표 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.</p>`;
+  } else if (state.selectedDate === todayKey && state.timetableMessage) {
+    els.todayTimetableSummary.innerHTML = `<p class="empty">${escapeHtml(state.timetableMessage)}</p>`;
   } else {
     els.todayTimetableSummary.innerHTML = `<p class="empty">등록된 시간표가 없어요.</p>`;
   }
@@ -1610,7 +1626,6 @@ function renderTimetableDetail() {
   const settings = getCurrentClassSettings();
   const grade = settings.grade;
   const className = settings.className;
-  const semester = settings.semester;
   const apiName = getTimetableApiName(state.selectedSchool);
   const notice = state.timetableNotice
     ? `<p class="detail-notice">${escapeHtml(state.timetableNotice)}</p>`
@@ -1633,12 +1648,6 @@ function renderTimetableDetail() {
     ? `<div class="quick-class-editor" aria-label="시간표 조회 기준 변경">
         <label>학년 <input id="quickGradeInput" type="number" min="1" max="6" value="${escapeHtml(grade)}" /></label>
         <label>반 <input id="quickClassInput" type="number" min="1" max="30" value="${escapeHtml(className)}" /></label>
-        <label>학기
-          <select id="quickSemesterInput">
-            <option value="1" ${semester === "1" ? "selected" : ""}>1학기</option>
-            <option value="2" ${semester === "2" ? "selected" : ""}>2학기</option>
-          </select>
-        </label>
         <div class="quick-class-actions">
           <button type="button" class="quick-apply-btn" data-timetable-action="apply-class">적용</button>
           <button type="button" class="quick-cancel-btn" data-timetable-action="cancel-class">취소</button>
@@ -1648,14 +1657,14 @@ function renderTimetableDetail() {
 
   els.timetableDetail.innerHTML = `
     <div class="timetable-detail-head">
-      <strong>${escapeHtml(grade)}학년 ${escapeHtml(className)}반 · ${escapeHtml(semester)}학기 기준</strong>
+      <strong>${escapeHtml(grade)}학년 ${escapeHtml(className)}반 기준</strong>
       <button type="button" class="quick-switch-btn" data-timetable-action="toggle-class">${state.classSwitcherOpen ? "닫기" : "반 바꾸기"}</button>
     </div>
     ${notice}
     <div class="timetable-ready">
       <span>조회 기준</span>
-      <b>${escapeHtml(grade)}학년 ${escapeHtml(className)}반 · ${escapeHtml(semester)}학기</b>
-      <p>${apiName ? "날짜를 바꾸면 이 기준으로 시간표가 자동 갱신됩니다." : "선택 학교의 학교급을 확인할 수 없습니다."}</p>
+      <b>${escapeHtml(grade)}학년 ${escapeHtml(className)}반</b>
+      <p>${apiName ? "선택한 날짜에 맞는 학기 시간표가 자동으로 적용됩니다." : "선택 학교의 학교급을 확인할 수 없습니다."}</p>
     </div>
     ${switcher}
     ${body}
@@ -1806,9 +1815,6 @@ async function handleTimetableDetailClick(event) {
     const current = getCurrentClassSettings();
     const quickGrade = normalizeNumberParam(document.querySelector("#quickGradeInput")?.value || current.grade, 1, 6);
     const quickClass = normalizeNumberParam(document.querySelector("#quickClassInput")?.value || current.className, 1, 30);
-    const quickSemester = ["1", "2"].includes(document.querySelector("#quickSemesterInput")?.value)
-      ? document.querySelector("#quickSemesterInput").value
-      : current.semester;
 
     if (!quickGrade || !quickClass) {
       showCopyToast("학년과 반을 올바르게 입력해 주세요.", true);
@@ -1816,21 +1822,19 @@ async function handleTimetableDetailClick(event) {
     }
 
     if (state.sharedView) {
-      state.sharedView = { grade: quickGrade, className: quickClass, semester: quickSemester };
+      state.sharedView = { grade: quickGrade, className: quickClass };
     } else {
       const profile = getActiveProfile();
       if (!profile) return;
       state.profileState = ProfileStore.updateProfile(profile.id, {
         ...profile,
         grade: quickGrade,
-        className: quickClass,
-        semester: quickSemester
+        className: quickClass
       });
     }
 
     els.gradeInput.value = quickGrade;
     els.classInput.value = quickClass;
-    els.semesterInput.value = quickSemester;
     state.contextVersion += 1;
     state.classSwitcherOpen = false;
     restoreTimetableFromCache();
@@ -1938,7 +1942,6 @@ function buildShareUrl(mode = "month") {
   const settings = getCurrentClassSettings();
   params.set("grade", settings.grade);
   params.set("classNm", settings.className);
-  params.set("semester", settings.semester);
 
   if (mode === "date" && state.selectedDate) {
     params.set("date", state.selectedDate);
@@ -1993,10 +1996,9 @@ function buildTodayCopyText() {
   const settings = getCurrentClassSettings();
   const grade = settings.grade;
   const className = settings.className;
-  const semester = settings.semester || getTodaySemester(todayKey);
   const todaySchedules = state.todaySchedules || [];
   const todayMeal = state.todayMeal;
-  const todayTimetable = getTimetableCacheWithOptions(todayKey, grade, className, semester);
+  const todayTimetable = getTimetableCacheWithOptions(todayKey, grade, className);
 
   return buildDayCopyText({
     dateKey: todayKey,
@@ -2096,7 +2098,6 @@ function getSharedStateFromUrl() {
     school,
     grade: normalizeNumberParam(params.get("grade"), 1, 6),
     className: normalizeNumberParam(params.get("classNm") || params.get("className"), 1, 30),
-    semester: ["1", "2"].includes(params.get("semester")) ? params.get("semester") : "",
     month: normalizeMonthParam(params.get("month")),
     date: normalizeDateParam(params.get("date"))
   };
@@ -2187,18 +2188,17 @@ function getTimetableCacheKey(dateKey = state.selectedDate, settings = getCurren
   return getTimetableCacheKeyWithOptions(
     dateKey,
     settings.grade,
-    settings.className,
-    settings.semester
+    settings.className
   );
 }
 
-function getTimetableCacheKeyWithOptions(dateKey, grade, className, semester) {
+function getTimetableCacheKeyWithOptions(dateKey, grade, className) {
   if (!state.selectedSchool || !dateKey) return "";
   return NeisCache.keys.timetable(
     state.selectedSchool.schoolCode || "unknown",
     grade || "1",
     className || "1",
-    semester || "1",
+    "auto",
     dateKey
   );
 }
@@ -2206,7 +2206,10 @@ function getTimetableCacheKeyWithOptions(dateKey, grade, className, semester) {
 function saveTimetableCache(dateKey, items, settings = getCurrentClassSettings()) {
   const key = getTimetableCacheKey(dateKey, settings);
   if (!key) return;
-  NeisCache.set(key, Array.isArray(items) ? items : []);
+  NeisCache.set(key, {
+    items: Array.isArray(items) ? items.filter((item) => !isNonInstructionTimetableItem(item)) : [],
+    dayLabel: getNonInstructionTimetableLabel(items)
+  });
 }
 
 function removeTimetableCache(dateKey, settings = getCurrentClassSettings()) {
@@ -2216,14 +2219,14 @@ function removeTimetableCache(dateKey, settings = getCurrentClassSettings()) {
 
 function getTimetableCache(dateKey = state.selectedDate) {
   const settings = getCurrentClassSettings();
-  return getTimetableCacheWithOptions(dateKey, settings.grade, settings.className, settings.semester);
+  return getTimetableCacheWithOptions(dateKey, settings.grade, settings.className);
 }
 
-function getTimetableCacheWithOptions(dateKey, grade, className, semester) {
-  const key = getTimetableCacheKeyWithOptions(dateKey, grade, className, semester);
+function getTimetableCacheWithOptions(dateKey, grade, className) {
+  const key = getTimetableCacheKeyWithOptions(dateKey, grade, className);
   if (!key) return [];
   const cached = NeisCache.get(key);
-  return cached.hit && Array.isArray(cached.data) ? cached.data : [];
+  return cached.hit ? normalizeTimetableCacheEntry(cached.data).items : [];
 }
 
 function hasTimetableCache(dateKey) {
@@ -2233,32 +2236,66 @@ function hasTimetableCache(dateKey) {
 function restoreTimetableFromCache() {
   const key = getTimetableCacheKey(state.selectedDate);
   const cachedEntry = key ? NeisCache.get(key) : { hit: false };
-  const cached = cachedEntry.hit && Array.isArray(cachedEntry.data) ? cachedEntry.data : [];
-  state.timetable = cached;
+  const cached = cachedEntry.hit
+    ? normalizeTimetableCacheEntry(cachedEntry.data)
+    : { items: [], dayLabel: "" };
+  state.timetable = cached.items;
+  state.timetableDayLabel = cached.dayLabel;
   state.timetableStatus = cachedEntry.hit ? "success" : "idle";
-  state.timetableMessage = cachedEntry.hit && !cached.length
-    ? "등록된 시간표가 없어요."
+  state.timetableMessage = cachedEntry.hit && !cached.items.length
+    ? getTimetableEmptyMessage(state.selectedDate, cached.dayLabel)
     : "";
-  state.timetableNotice = cached.length ? "저장된 시간표 조회 결과를 보여드려요." : "";
+  state.timetableNotice = cached.items.length ? "저장된 시간표 조회 결과를 보여드려요." : "";
 }
 
-function getTodaySemester(dateKey = formatDateKey(new Date())) {
+function getSemesterCandidates(dateKey = state.selectedDate) {
   const date = new Date(`${dateKey}T00:00:00`);
   const month = date.getMonth() + 1;
+  const preferred = month >= 3 && month <= 7 ? "1" : "2";
+  return preferred === "1" ? ["1", "2"] : ["2", "1"];
+}
 
-  if (month >= 3 && month <= 6) return "1";
-  if (month >= 9 || month <= 2) return "2";
+function getAcademicYear(dateKey = state.selectedDate) {
+  const date = new Date(`${dateKey}T00:00:00`);
+  const year = date.getFullYear();
+  return date.getMonth() + 1 <= 2 ? year - 1 : year;
+}
 
-  const schedules = state.schedules || [];
-  const hasSecondSemesterStart = schedules.some((item) => {
-    const text = `${item.title || ""} ${item.content || ""}`;
-    return item.date <= dateKey && /(2학기|개학|개학식|2학기 시작)/.test(text);
+function isNonInstructionTimetableItem(item = {}) {
+  const subject = String(item.subject || "").replace(/\s+/g, "").trim();
+  return /(?:방학|휴업|휴교)/.test(subject);
+}
+
+function getNonInstructionTimetableLabel(items = []) {
+  const item = (Array.isArray(items) ? items : []).find(isNonInstructionTimetableItem);
+  return item ? String(item.subject || "").replace(/\s+/g, " ").trim() : "";
+}
+
+function normalizeTimetableCacheEntry(data) {
+  const rawItems = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.items) ? data.items : [];
+  return {
+    items: rawItems.filter((item) => !isNonInstructionTimetableItem(item)),
+    dayLabel: String(data?.dayLabel || getNonInstructionTimetableLabel(rawItems)).trim()
+  };
+}
+
+function getTimetableEmptyMessage(dateKey = state.selectedDate, fallbackLabel = "") {
+  const closure = (state.schedules || []).find((item) => {
+    if (item.date !== dateKey) return false;
+    return /(?:방학|휴업|휴교)/.test(`${item.title || ""} ${item.content || ""}`);
   });
-  if (hasSecondSemesterStart) return "2";
+  if (closure) {
+    const label = String(closure.title || "방학·휴업일").replace(/\s+/g, " ").trim();
+    return `${label}이라 시간표가 없어요.`;
+  }
 
-  const savedSemester = state.sharedView?.semester || getActiveProfile()?.semester;
-  if (savedSemester === "1" || savedSemester === "2") return savedSemester;
-  return "1";
+  if (fallbackLabel) return `${fallbackLabel}이라 시간표가 없어요.`;
+
+  const date = new Date(`${dateKey}T00:00:00`);
+  if (date.getDay() === 0 || date.getDay() === 6) return "주말이라 시간표가 없어요.";
+  return "등록된 시간표가 없어요.";
 }
 
 function cleanTextLines(value = "") {

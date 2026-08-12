@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="우리아이 오늘" />
   <meta name="application-name" content="우리아이 오늘" />
-  <meta name="app-version" content="1.0.4" />
+  <meta name="app-version" content="1.0.5" />
   <title>우리아이 오늘</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
@@ -16,7 +16,7 @@
   <link rel="shortcut icon" href="favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
-  <link rel="stylesheet" href="style.css?v=1.0.4" />
+  <link rel="stylesheet" href="style.css?v=1.0.5" />
 </head>
 <body>
   <a class="skip-link" href="#mainContent">본문 바로가기</a>
@@ -120,12 +120,6 @@
             <div class="timetable-controls top-timetable-controls">
               <label>학년 <input id="gradeInput" type="number" min="1" max="6" value="1" /></label>
               <label>반 <input id="classInput" type="number" min="1" max="30" value="1" /></label>
-              <label>학기
-                <select id="semesterInput">
-                  <option value="1">1학기</option>
-                  <option value="2">2학기</option>
-                </select>
-              </label>
             </div>
             <p class="save-helper timetable-save-helper">등록 완료 후 이 자녀의 급식·시간표·학사일정에 적용돼요.</p>
           </div>
@@ -200,7 +194,7 @@
           </article>
           <article class="today-summary-item">
             <strong id="todayTimetableTitle" class="summary-title summary-title-timetable"><span class="title-emoji" aria-hidden="true">🕘</span><span>시간표</span></strong>
-            <div id="todayTimetableSummary" class="today-summary-body">학년·반·학기를 입력하고 시간표를 불러오면 표시됩니다.</div>
+            <div id="todayTimetableSummary" class="today-summary-body">학년·반을 입력하면 날짜에 맞는 시간표가 자동으로 표시됩니다.</div>
           </article>
         </div>
       </section>
@@ -438,8 +432,8 @@
     </section>
   </div>
   <div class="copy-toast" id="copyToast" role="status" aria-live="polite"></div>
-  <script src="profile-store.js?v=1.0.4"></script>
-  <script src="neis-cache.js?v=1.0.4"></script>
-  <script src="app.js?v=1.0.4"></script>
+  <script src="profile-store.js?v=1.0.5"></script>
+  <script src="neis-cache.js?v=1.0.5"></script>
+  <script src="app.js?v=1.0.5"></script>
 </body>
 </html>
