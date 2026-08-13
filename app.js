@@ -1,6 +1,6 @@
 // ============================================================
-// 우리아이 오늘 v1.0.5 Semester Auto Lookup
-// 날짜 기준 학기 자동 조회·학사연도 보정·방학 시간표 반복 표시 제거
+// 우리아이 오늘 v1.0.7 Preserve Parent View Context
+// 자녀 전환·수정 후 선택 날짜와 탭 유지
 // ============================================================
 
 const API_CONFIG = {
@@ -44,6 +44,7 @@ const state = {
   profileState: ProfileStore.loadState(),
   profileEditorMode: "closed",
   editingProfileId: null,
+  profileEditorReturnState: null,
   draftSchool: null,
   sharedView: null,
   contextVersion: 0,
@@ -288,6 +289,33 @@ function scrollToCalendarArea(smooth = true) {
   scrollToViewSection(target, smooth);
 }
 
+function captureViewState() {
+  return {
+    activeTab: ["calendar", "today", "settings"].includes(state.activeTab) ? state.activeTab : "calendar",
+    selectedDate: state.selectedDate,
+    currentDate: new Date(state.currentDate)
+  };
+}
+
+function restoreViewState(viewState, { activeTab } = {}) {
+  if (!viewState) return;
+  if (viewState.selectedDate) state.selectedDate = viewState.selectedDate;
+  if (viewState.currentDate instanceof Date && !Number.isNaN(viewState.currentDate.getTime())) {
+    state.currentDate = new Date(viewState.currentDate);
+  }
+  const nextTab = activeTab || viewState.activeTab;
+  state.activeTab = ["calendar", "today", "settings"].includes(nextTab) ? nextTab : "calendar";
+}
+
+function scrollToActiveView(smooth = true) {
+  const targetMap = {
+    calendar: document.querySelector("#calendarArea"),
+    today: els.todaySummaryCard,
+    settings: document.querySelector("#search:not([hidden])") || document.querySelector("#profiles")
+  };
+  requestAnimationFrame(() => scrollToViewSection(targetMap[state.activeTab], smooth));
+}
+
 function renderOfficeOptions() {
   els.officeCode.innerHTML = OFFICE_OPTIONS.map((office) => `<option value="${office.code}">${office.name}</option>`).join("");
 }
@@ -326,8 +354,8 @@ function bindEvents() {
     if (profile) openProfileEditor("edit", profile.id);
   });
   els.saveProfileBtn?.addEventListener("click", saveProfileFromEditor);
-  els.cancelProfileEditBtn?.addEventListener("click", closeProfileEditor);
-  els.cancelProfileEditBtnBottom?.addEventListener("click", closeProfileEditor);
+  els.cancelProfileEditBtn?.addEventListener("click", () => closeProfileEditor());
+  els.cancelProfileEditBtnBottom?.addEventListener("click", () => closeProfileEditor());
   els.deleteProfileBtn?.addEventListener("click", deleteEditingProfile);
   els.exitSharedViewBtn?.addEventListener("click", exitSharedView);
   els.schoolInfoToggleBtn?.addEventListener("click", toggleSchoolInfo);
@@ -557,16 +585,16 @@ async function selectProfile(profileId) {
   const profile = state.profileState.profiles.find((item) => item.id === profileId);
   if (!profile) return;
 
+  const viewState = captureViewState();
   state.profileState = ProfileStore.setActiveProfile(profileId);
   clearShareQuery();
-  closeProfileEditor(false);
+  closeProfileEditor(false, false);
   applyProfileToRuntime(profile);
-  setSelectedDateToToday();
-  state.activeTab = "calendar";
+  restoreViewState(viewState);
   renderAll();
   await Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(profile.id)]);
   renderAll();
-  scrollToCalendarArea(true);
+  scrollToActiveView(true);
 }
 
 function openProfileEditor(mode, profileId = null, shouldScroll = true) {
@@ -580,6 +608,7 @@ function openProfileEditor(mode, profileId = null, shouldScroll = true) {
     : null;
   if (mode === "edit" && !profile) return;
 
+  state.profileEditorReturnState = captureViewState();
   state.activeTab = "settings";
   state.profileEditorMode = mode;
   state.editingProfileId = profile?.id || null;
@@ -604,16 +633,19 @@ function openProfileEditor(mode, profileId = null, shouldScroll = true) {
   }
 }
 
-function closeProfileEditor(render = true) {
+function closeProfileEditor(render = true, restoreView = true) {
   if (!state.profileState.profiles.length && !state.sharedView) {
     state.profileEditorMode = "add";
     renderProfileEditor();
     return;
   }
+  const returnState = state.profileEditorReturnState;
   state.profileEditorMode = "closed";
   state.editingProfileId = null;
+  state.profileEditorReturnState = null;
   state.draftSchool = null;
   els.schoolResults.innerHTML = "";
+  if (restoreView) restoreViewState(returnState);
   if (render) renderAll();
 }
 
@@ -665,6 +697,8 @@ async function saveProfileFromEditor() {
 
   try {
     const wasEditing = state.profileEditorMode === "edit";
+    const wasFirstRegistration = !wasEditing && state.profileState.profiles.length === 0;
+    const returnState = state.profileEditorReturnState || captureViewState();
     const existingProfile = wasEditing
       ? state.profileState.profiles.find((item) => item.id === state.editingProfileId)
       : null;
@@ -687,15 +721,22 @@ async function saveProfileFromEditor() {
     clearShareQuery();
     state.profileEditorMode = "closed";
     state.editingProfileId = null;
+    state.profileEditorReturnState = null;
     state.draftSchool = null;
     applyProfileToRuntime(profile);
-    setSelectedDateToToday();
-    state.activeTab = "calendar";
+    if (wasFirstRegistration) {
+      setSelectedDateToToday();
+      state.activeTab = "calendar";
+    } else if (wasEditing) {
+      restoreViewState(returnState);
+    } else {
+      restoreViewState(returnState, { activeTab: "calendar" });
+    }
     renderAll();
     await Promise.allSettled([loadMonthData(), enrichProfileSchoolInfo(profile.id)]);
     renderAll();
     showCopyToast(wasEditing ? "자녀 정보를 수정했어요." : "자녀를 등록했어요.");
-    scrollToCalendarArea(true);
+    scrollToActiveView(true);
   } catch (error) {
     showCopyToast(error.message || "자녀 정보를 저장하지 못했어요.", true);
   }
@@ -2009,6 +2050,25 @@ function buildTodayCopyText() {
   });
 }
 
+function buildCurrentChildCopyHeading() {
+  if (!state.selectedSchool) return "";
+
+  const settings = getCurrentClassSettings();
+  const profile = state.sharedView ? null : getActiveProfile();
+  const nickname = plainText(profile?.nickname || "");
+  const schoolName = plainText(state.selectedSchool.schoolName || "");
+  const grade = plainText(settings.grade || "");
+  const className = plainText(settings.className || "");
+  const classParts = [
+    schoolName,
+    grade ? `${grade}학년` : "",
+    className ? `${className}반` : ""
+  ].filter(Boolean);
+  const schoolAndClass = classParts.join(" ");
+
+  return [nickname, schoolAndClass].filter(Boolean).join(" · ");
+}
+
 function buildSelectedDateCopyText() {
   if (!state.selectedSchool) return "";
   const selectedSchedules = state.schedules.filter((item) => item.date === state.selectedDate);
@@ -2025,7 +2085,12 @@ function buildSelectedDateCopyText() {
 }
 
 function buildDayCopyText({ dateKey, schedules, meal, timetable, noTimetableText }) {
-  const lines = [formatKoreanDate(dateKey), ""];
+  const childHeading = buildCurrentChildCopyHeading();
+  const lines = [
+    ...(childHeading ? [childHeading] : []),
+    formatKoreanDate(dateKey),
+    ""
+  ];
 
   lines.push("📅 학사일정");
   if (schedules?.length) {
