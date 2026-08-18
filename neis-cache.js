@@ -1,7 +1,7 @@
 (() => {
-  const VERSION = 1;
+  const VERSION = 2;
   const PREFIX = `hakdol.neis.v${VERSION}:`;
-  const STALE_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
+  const STALE_RETENTION_MS = 24 * 60 * 60 * 1000;
   const memory = new Map();
   const inflight = new Map();
 
@@ -150,18 +150,12 @@
     }
   }
 
-  function pad(value) {
-    return String(value).padStart(2, "0");
-  }
-
-  function daysInMonth(monthKey) {
-    const [year, month] = monthKey.split("-").map(Number);
-    return new Date(year, month, 0).getDate();
-  }
-
   const keys = {
     schedule(schoolCode, monthKey) {
       return `schedule:${schoolCode}:${monthKey}`;
+    },
+    scheduleDay(schoolCode, dateKey) {
+      return `schedule-day:${schoolCode}:${dateKey}`;
     },
     meal(schoolCode, dateKey) {
       return `meal:${schoolCode}:${dateKey}`;
@@ -174,16 +168,6 @@
     }
   };
 
-  function seedMealMonth(schoolCode, monthKey, meals = []) {
-    if (!schoolCode || !/^\d{4}-\d{2}$/.test(monthKey)) return;
-    const byDate = new Map((Array.isArray(meals) ? meals : []).map((meal) => [meal?.date, meal]));
-    const totalDays = daysInMonth(monthKey);
-    for (let day = 1; day <= totalDays; day += 1) {
-      const dateKey = `${monthKey}-${pad(day)}`;
-      set(keys.meal(schoolCode, dateKey), byDate.get(dateKey) ?? null);
-    }
-  }
-
   cleanup();
 
   window.NeisCache = Object.freeze({
@@ -194,7 +178,6 @@
     remove,
     getOrFetch,
     cleanup,
-    seedMealMonth,
     nextLocalMidnight
   });
 })();

@@ -1,6 +1,6 @@
 // ============================================================
-// 우리아이 오늘 v1.0.7 Preserve Parent View Context
-// 자녀 전환·수정 후 선택 날짜와 탭 유지
+// 우리아이 오늘 v1.0.8 Two-day Prefetch & Lean Cache
+// 오늘 우선 표시 + 내일 시간표 선조회 + 월 캐시 중복 저장 제거
 // ============================================================
 
 const API_CONFIG = {
@@ -827,6 +827,38 @@ async function fetchSchedules(
   return Array.isArray(result.data) ? result.data : [];
 }
 
+async function fetchScheduleDay(
+  school = state.selectedSchool,
+  dateKey = state.selectedDate,
+  { forceRefresh = false } = {}
+) {
+  if (!school || !dateKey) return [];
+  const context = getNeisContext(school);
+  const monthKey = dateKey.slice(0, 7);
+
+  if (!forceRefresh) {
+    const monthly = NeisCache.get(NeisCache.keys.schedule(context.schoolCode, monthKey));
+    if (monthly.hit && Array.isArray(monthly.data)) {
+      return monthly.data.filter((item) => item?.date === dateKey);
+    }
+  }
+
+  const cacheKey = NeisCache.keys.scheduleDay(context.schoolCode, dateKey);
+  const result = await NeisCache.getOrFetch(cacheKey, async () => {
+    const params = new URLSearchParams({
+      officeCode: context.officeCode,
+      schoolCode: context.schoolCode,
+      date: compactDate(dateKey)
+    });
+    const response = await fetch(`${API_CONFIG.baseUrl}/api/schedules?${params.toString()}`);
+    if (!response.ok) throw new Error("학사일정 조회 실패");
+    const data = await response.json();
+    return (data.schedules || []).map(normalizeSchedule);
+  }, { forceRefresh });
+
+  return Array.isArray(result.data) ? result.data : [];
+}
+
 async function fetchMeals(
   school = state.selectedSchool,
   currentDate = state.currentDate,
@@ -851,7 +883,6 @@ async function fetchMeals(
   }, { forceRefresh });
 
   const meals = Array.isArray(result.data) ? result.data : [];
-  if (!result.stale) NeisCache.seedMealMonth(context.schoolCode, monthKey, meals);
   cacheMeta.meals = result.stale;
   return meals;
 }
@@ -863,6 +894,17 @@ async function fetchMeal(
 ) {
   if (!school || !dateKey) return null;
   const context = getNeisContext(school);
+  const monthKey = dateKey.slice(0, 7);
+
+  // 월 급식 캐시가 있으면 날짜별 캐시를 따로 만들지 않고 필요한 하루만 꺼냅니다.
+  if (!forceRefresh) {
+    const monthly = NeisCache.get(NeisCache.keys.mealMonth(context.schoolCode, monthKey));
+    if (monthly.hit && Array.isArray(monthly.data)) {
+      cacheMeta.meal = monthly.stale;
+      return monthly.data.find((item) => item?.date === dateKey) ?? null;
+    }
+  }
+
   const cacheKey = NeisCache.keys.meal(context.schoolCode, dateKey);
   const result = await NeisCache.getOrFetch(cacheKey, async () => {
     const params = new URLSearchParams({
@@ -1047,6 +1089,9 @@ async function loadMonthData() {
   if (isCurrentContext(contextVersion, school, monthPrefix)) {
     renderTimetableDetail();
     renderTodaySummary();
+
+    // 오늘 시간표 표시가 끝난 뒤 내일 시간표를 백그라운드에서 미리 캐시합니다.
+    void prefetchTomorrowTimetable(contextVersion, school);
   }
   finishDataLoading(loadingToken);
 }
@@ -1437,14 +1482,14 @@ async function loadTomorrowPreview(contextVersion = state.contextVersion, school
       state.tomorrowSchedules = state.schedules.filter((item) => item.date === tomorrowKey);
       state.tomorrowMeal = state.mealsByDate[tomorrowKey] || null;
     } else {
-      const nextMonthDate = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), 1);
-      const [schedules, meals] = await Promise.all([
-        fetchSchedules(school, nextMonthDate),
-        fetchMeals(school, nextMonthDate)
+      // 월말에도 내일 하루를 위해 다음 달 전체 데이터를 저장하지 않습니다.
+      const [schedules, meal] = await Promise.all([
+        fetchScheduleDay(school, tomorrowKey),
+        fetchMeal(school, tomorrowKey)
       ]);
       if (!isCurrentContext(contextVersion, school)) return;
-      state.tomorrowSchedules = schedules.filter((item) => item.date === tomorrowKey);
-      state.tomorrowMeal = meals.find((item) => item.date === tomorrowKey) || null;
+      state.tomorrowSchedules = schedules;
+      state.tomorrowMeal = meal;
     }
     state.tomorrowStatus = "success";
     state.tomorrowMessage = "";
@@ -1454,6 +1499,18 @@ async function loadTomorrowPreview(contextVersion = state.contextVersion, school
     state.tomorrowMeal = null;
     state.tomorrowStatus = "error";
     state.tomorrowMessage = "내일 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.";
+  }
+}
+
+async function prefetchTomorrowTimetable(contextVersion = state.contextVersion, school = state.selectedSchool) {
+  if (!school || !getTimetableApiName(school)) return;
+  const tomorrowKey = formatDateKey(addDays(new Date(), 1));
+  const settings = { ...getCurrentClassSettings() };
+
+  try {
+    await fetchTimetable(school, tomorrowKey, settings);
+  } catch (error) {
+    // 선조회 실패는 오늘 화면 사용을 방해하지 않습니다. 내일 상세 진입 시 다시 시도합니다.
   }
 }
 

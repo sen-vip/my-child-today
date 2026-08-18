@@ -42,10 +42,10 @@ app.get("/api/schools", async (req, res) => {
 
 app.get("/api/schedules", async (req, res) => {
   try {
-    const { officeCode, schoolCode, year, month } = req.query;
-    const monthNumber = String(month).padStart(2, "0");
-    const startDate = `${year}${monthNumber}01`;
-    const endDate = `${year}${monthNumber}${lastDayOfMonth(Number(year), Number(month))}`;
+    const { officeCode, schoolCode, year, month, date } = req.query;
+    const monthNumber = String(month || "").padStart(2, "0");
+    const startDate = date || `${year}${monthNumber}01`;
+    const endDate = date || `${year}${monthNumber}${lastDayOfMonth(Number(year), Number(month))}`;
 
     const data = await neisFetch("SchoolSchedule", {
       ATPT_OFCDC_SC_CODE: officeCode,
